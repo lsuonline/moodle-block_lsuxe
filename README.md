@@ -1,2 +1,2 @@
-# moodle-block_xe
+# moodle-block_lsuxe
 Moodle to Moodle administrative cross enrollment
