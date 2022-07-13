@@ -94,8 +94,8 @@ class block_lsuxe extends block_list {
 
         $this->content = $this->get_new_content_container();
 
-        $coursecontext = context_course::instance($this->course->id);
-        $systemcontext = context_system::instance();
+        // $coursecontext = context_course::instance($this->course->id);
+        // $systemcontext = context_system::instance();
 
         if (is_siteadmin()) {
             error_log("\n");
