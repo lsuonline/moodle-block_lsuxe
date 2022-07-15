@@ -52,7 +52,8 @@ class lsuxe_helpers {
         global $DB, $CFG;
 
         // LSU UES Specific enrollemnt / unenrollment data.
-        $lsql = 'SELECT u.id AS "userid",
+        $lsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
+                u.id AS "userid",
                 c.id AS "sourcecourseid",
                 c.shortname AS "sourcecourseshortname",
                 g.id AS "sourcegroupid",
@@ -67,10 +68,10 @@ class lsuxe_helpers {
                 "student" AS "role",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
-                xemm.destcourseid AS "destinationcourseid",
-                xemm.destcourseshortname AS "destinationcourseshortname",
-                xemm.destgroupid AS "destinationgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destinationgroupname",
+                xemm.destcourseid AS "destcourseid",
+                xemm.destcourseshortname AS "destshortname",
+                xemm.destgroupid AS "destgroupid",
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
                 ue.timestart AS "timestart",
                 ue.timeend AS "timeend"
             FROM {course} c
@@ -97,7 +98,9 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() < xemm.endtime
 
             UNION
-            SELECT u.id AS "userid",
+
+            SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
+                u.id AS "userid",
                 c.id AS "sourcecourseid",
                 c.shortname AS "sourcecourseshortname",
                 g.id AS "sourcegroupid",
@@ -112,10 +115,10 @@ class lsuxe_helpers {
                 "editingteacher" AS "role",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
-                xemm.destcourseid AS "destinationcourseid",
-                xemm.destcourseshortname AS "destinationcourseshortname",
-                xemm.destgroupid AS "destinationgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destinationgroupname",
+                xemm.destcourseid AS "destcourseid",
+                xemm.destcourseshortname AS "destshortname",
+                xemm.destgroupid AS "destgroupid",
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
                 ue.timestart AS "timestart",
                 ue.timeend AS "timeend"
             FROM {course} c
@@ -142,7 +145,8 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() < xemm.endtime';
 
         // Generic Moodle enrollment / suspension data.
-        $gsql = 'SELECT u.id AS "userid",
+        $gsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
+                u.id AS "userid",
                 c.id AS "sourcecourseid",
                 c.shortname AS "sourcecourseshortname",
                 g.id AS "sourcegroupid",
@@ -157,10 +161,10 @@ class lsuxe_helpers {
                 mr.shortname AS "role",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
-                xemm.destcourseid AS "destinationcourseid",
-                xemm.destcourseshortname AS "destinationcourseshortname",
-                xemm.destgroupid AS "destinationgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destinationgroupname",
+                xemm.destcourseid AS "destcourseid",
+                xemm.destcourseshortname AS "destshortname",
+                xemm.destgroupid AS "destgroupid",
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
                 ue.timestart AS "timestart",
                 ue.timeend AS "timeend"
             FROM {course} c
@@ -224,5 +228,149 @@ class lsuxe_helpers {
         return $isues;
     }
 
-}
+    public static function xe_write_destcourse() {
+        global $DB;
 
+        $sql = 'SELECT xemm.id AS xemmid,
+                   xem.url AS "destmoodle",
+                   xem.token AS "usertoken",
+                   xemm.destcourseshortname AS "destshortname"
+               FROM {block_lsuxe_moodles} xem
+                   INNER JOIN {block_lsuxe_mappings} xemm ON xemm.destmoodleid = xem.id
+               WHERE xemm.destcourseid IS NULL
+                   AND UNIX_TIMESTAMP() > xemm.starttime
+                   AND UNIX_TIMESTAMP() < xemm.endtime';
+
+        $datas = $DB->get_records_sql($sql);
+
+        if($datas) {
+            foreach ($datas as $data) {
+                $pageparams = [
+                    'wstoken' => $data->usertoken,
+                    'wsfunction' => 'core_course_get_courses_by_field',
+                    'moodlewsrestformat' => 'json',
+                    'field' => 'shortname',
+                    'value' => $data->destshortname,
+                ];
+
+                $defaults = array(
+                    CURLOPT_URL => 'https://' . $data->destmoodle . '/webservice/rest/server.php',
+                    CURLOPT_HEADER => 0,
+                    CURLOPT_RETURNTRANSFER => TRUE,
+                    CURLOPT_TIMEOUT => 4,
+                    CURLOPT_POST => false,
+                    CURLOPT_POSTFIELDS => $pageparams,
+                );
+
+                $ch = curl_init();
+                curl_setopt_array($ch, $defaults);
+
+                $returndata[] = curl_exec($ch);
+                curl_close($ch);
+
+                $destcourseid = json_decode($returndata[0], true)['courses'][0]['id'];
+
+                $dataobject = [
+                    'id' => $data->xemmid,
+                    'destcourseid' => $destcourseid,
+                ];
+
+                $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
+            }
+        }
+        return isset($errors) ? $errors : true;
+    }
+
+
+    public static function xe_write_destgroup() {
+        global $DB;
+
+        $sql = 'SELECT xemm.id AS xemmid,
+                   xem.url AS "destmoodle",
+                   xem.token AS "usertoken",
+                   xemm.destcourseid AS "destcourseid",
+                   xemm.destgroupprefix AS "destgroupprefix",
+                   xemm.groupname AS "groupname"
+               FROM {block_lsuxe_moodles} xem
+                   INNER JOIN {block_lsuxe_mappings} xemm ON xemm.destmoodleid = xem.id
+               WHERE xemm.destgroupid IS NULL
+                   AND xemm.destcourseid IS NOT NULL
+                   AND UNIX_TIMESTAMP() > xemm.starttime
+                   AND UNIX_TIMESTAMP() < xemm.endtime';
+
+        $datas = $DB->get_records_sql($sql);
+
+        if($datas) {
+            foreach ($datas as $data) {
+                $gpageparams = [
+                    'wstoken' => $data->usertoken,
+                    'wsfunction' => 'core_group_get_course_groups',
+                    'moodlewsrestformat' => 'json',
+                    'courseid' => $data->destcourseid,
+                ];
+
+                $upageparams = [
+                    'wstoken' => $data->usertoken,
+                    'wsfunction' => 'core_group_create_groups',
+                    'moodlewsrestformat' => 'json',
+                    'groups[0][courseid]' => $data->destcourseid,
+                    'groups[0][name]' => $data->destgroupprefix . " " . $data->groupname,
+                    'groups[0][description]' => "From " . $data->destgroupprefix,
+                ];
+
+                $gdefaults = array(
+                    CURLOPT_URL => 'https://' . $data->destmoodle . '/webservice/rest/server.php',
+                    CURLOPT_HEADER => 0,
+                    CURLOPT_RETURNTRANSFER => TRUE,
+                    CURLOPT_TIMEOUT => 4,
+                    CURLOPT_POST => false,
+                    CURLOPT_POSTFIELDS => $gpageparams,
+                );
+
+                $udefaults = array(
+                    CURLOPT_URL => 'https://' . $data->destmoodle . '/webservice/rest/server.php',
+                    CURLOPT_HEADER => 0,
+                    CURLOPT_RETURNTRANSFER => TRUE,
+                    CURLOPT_TIMEOUT => 4,
+                    CURLOPT_POST => false,
+                    CURLOPT_POSTFIELDS => $upageparams,
+                );
+
+                $ch = curl_init();
+                curl_setopt_array($ch, $gdefaults);
+
+                $returndata[] = curl_exec($ch);
+                curl_close($ch);
+
+                $returnedgroups = json_decode($returndata[0], true);
+
+                foreach ($returnedgroups as $returnedgroup) {
+                    $destgroupnamexp = $data->destgroupprefix . " " . $data->groupname;
+                    $destgroupname = $returnedgroup['name'];
+
+                    if ($destgroupnamexp == $destgroupname) {
+                        $destgroupid = $returnedgroup['id'];
+                        break;
+                    } else {
+                        $destgroupid = null;
+                    }
+                }
+
+                if (isset($destgroupid)) {
+                    $dataobject = [
+                        'id' => $data->xemmid,
+                        'destgroupid' => $destgroupid,
+                    ];
+                    $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
+                } else {
+                $ch2 = curl_init();
+                curl_setopt_array($ch2, $udefaults);
+
+                $returndata2[] = curl_exec($ch2);
+                curl_close($ch2);
+                }
+            }
+        }
+        return isset($errors) ? $errors : true;
+    }
+}
