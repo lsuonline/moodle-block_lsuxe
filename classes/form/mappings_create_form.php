@@ -37,7 +37,7 @@ class mappings_create_form extends \moodleform {
         $mform->addElement(
             'text',
             'srccourseshortname',
-            get_string('srccourseshortname', 'block_lsuxe'),
+            get_string('srccourseshortname', 'block_lsuxe')
         );
         $mform->setType(
             'srccourseshortname',
@@ -47,7 +47,7 @@ class mappings_create_form extends \moodleform {
         $mform->addElement(
             'text',
             'srccoursegroupname',
-            get_string('srccoursegroupname', 'block_lsuxe'),
+            get_string('srccoursegroupname', 'block_lsuxe')
         );
         $mform->setType(
             'srccoursegroupname',
@@ -72,7 +72,7 @@ class mappings_create_form extends \moodleform {
         $mform->addElement(
             'text',
             'destcourseshortname',
-            get_string('destcourseshortname', 'block_lsuxe'),
+            get_string('destcourseshortname', 'block_lsuxe')
         );
         $mform->setType(
             'destcourseshortname',
@@ -82,7 +82,7 @@ class mappings_create_form extends \moodleform {
         $mform->addElement(
             'text',
             'destcoursegroupname',
-            get_string('destcoursegroupname', 'block_lsuxe'),
+            get_string('destcoursegroupname', 'block_lsuxe')
         );
         $mform->setType(
             'destcoursegroupname',
@@ -108,7 +108,7 @@ class mappings_create_form extends \moodleform {
         $buttons = [
             $mform->createElement('submit', 'send', get_string('savemapping', 'block_lsuxe')),
             $mform->createElement('button', 'verifysource', get_string('verifysrccourse', 'block_lsuxe')),
-            $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe')),
+            $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe'))
         ];
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
