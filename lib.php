@@ -17,7 +17,7 @@
 /**
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
+ * @copyright  2008 onwards David Lowe, Robert Russo
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -64,12 +64,15 @@ class lsuxe_helpers {
                 u.lastname AS "lastname",
                 u.alternatename AS "alternamtename",
                 stu.status AS "status",
-                xem.url AS "sourcemoodle",
+                "student" AS "role",
+                xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xemm.destcourseid AS "destinationcourseid",
                 xemm.destcourseshortname AS "destinationcourseshortname",
                 xemm.destgroupid AS "destinationgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destinationgroupname"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destinationgroupname",
+                ue.timestart AS "timestart",
+                ue.timeend AS "timeend"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -77,6 +80,55 @@ class lsuxe_helpers {
                 INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
                 INNER JOIN {enrol_ues_students} stu ON stu.sectionid = sec.id
                 INNER JOIN {user} u ON u.id = stu.userid
+                INNER JOIN {enrol} e ON e.courseid = c.id
+                    AND e.enrol = "ues"
+                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                    AND ue.userid = u.id
+                INNER JOIN {groups} g ON g.courseid = c.id
+                    AND g.id = xemm.groupid
+                    AND g.name = xemm.groupname
+                    AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
+                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+            WHERE sec.idnumber IS NOT NULL
+                AND sec.idnumber <> ""
+                AND xemm.destcourseid IS NOT NULL
+                AND xemm.destgroupid IS NOT NULL
+                AND UNIX_TIMESTAMP() > xemm.starttime
+                AND UNIX_TIMESTAMP() < xemm.endtime
+
+            UNION
+            SELECT u.id AS "userid",
+                c.id AS "sourcecourseid",
+                c.shortname AS "sourcecourseshortname",
+                g.id AS "sourcegroupid",
+                g.name AS "sourcegroupname",
+                u.username AS "username",
+                u.email AS "email",
+                u.idnumber AS "idnumber",
+                u.firstname AS "firstname",
+                u.lastname AS "lastname",
+                u.alternatename AS "alternamtename",
+                stu.status AS "status",
+                "editingteacher" AS "role",
+                xem.url AS "destmoodle",
+                xem.token AS "usertoken",
+                xemm.destcourseid AS "destinationcourseid",
+                xemm.destcourseshortname AS "destinationcourseshortname",
+                xemm.destgroupid AS "destinationgroupid",
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destinationgroupname",
+                ue.timestart AS "timestart",
+                ue.timeend AS "timeend"
+            FROM {course} c
+                INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
+                INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
+                INNER JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
+                INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
+                INNER JOIN {enrol_ues_teachers} stu ON stu.sectionid = sec.id
+                INNER JOIN {user} u ON u.id = stu.userid
+                INNER JOIN {enrol} e ON e.courseid = c.id
+                    AND e.enrol = "ues"
+                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                    AND ue.userid = u.id
                 INNER JOIN {groups} g ON g.courseid = c.id
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
@@ -102,12 +154,15 @@ class lsuxe_helpers {
                 u.lastname AS "lastname",
                 u.alternatename AS "alternamtename",
                 IF(ue.status = 0, "enrolled", "unenrolled") AS "status",
-                xem.url AS "sourcemoodle",
+                mr.shortname AS "role",
+                xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xemm.destcourseid AS "destinationcourseid",
                 xemm.destcourseshortname AS "destinationcourseshortname",
                 xemm.destgroupid AS "destinationgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destinationgroupname"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destinationgroupname",
+                ue.timestart AS "timestart",
+                ue.timeend AS "timeend"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -123,16 +178,13 @@ class lsuxe_helpers {
                 INNER JOIN {groups} g ON g.courseid = c.id
                 INNER JOIN {groups_members} gm ON gm.groupid = g.id
                     AND u.id = gm.userid
-             WHERE UNIX_TIMESTAMP() > xemm.starttime
-                 AND UNIX_TIMESTAMP() < xemm.endtime
-                 AND mr.name = "student"
-                 AND e.enrol = xemm.authmethod
-                 AND mra.component = CONCAT("enrol_", xemm.authmethod)
-                 AND xemm.destcourseid IS NOT NULL
-                 AND xemm.destgroupid IS NOT NULL';
+            WHERE xemm.destcourseid IS NOT NULL
+                AND xemm.destgroupid IS NOT NULL
+                AND UNIX_TIMESTAMP() > xemm.starttime
+                AND UNIX_TIMESTAMP() < xemm.endtime';
 
         // Check to see if we're forcing Moodle enrollment.
-        $ues = isset($CFG->lsuxealwaysusenormalenrollment) == 0 ? true : false;
+        $ues = isset($CFG->xeforceenroll) == 0 ? true : false;
 
         // Based on the config and if we're using ues, use the appropriate SQL.
         $sql = $ues && self::is_ues() ? $lsql : $gsql;
