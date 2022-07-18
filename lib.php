@@ -228,6 +228,11 @@ class lsuxe_helpers {
         return $isues;
     }
 
+    /**
+     * Function to grab the destination course id and write it locally.
+     *
+     * @return @array of objects
+     */
     public static function xe_write_destcourse() {
         global $DB;
 
@@ -281,10 +286,17 @@ class lsuxe_helpers {
         return isset($errors) ? $errors : true;
     }
 
-
+    /**
+     * Function to grab destination group id if it exsits.
+     * Write the existing group id locally.
+     * If the destination group is not present, create it.
+     *
+     * @return true
+     */
     public static function xe_write_destgroup() {
         global $DB;
 
+        // Build the SQL to get the appropriate data for the webservice.
         $sql = 'SELECT xemm.id AS xemmid,
                    xem.url AS "destmoodle",
                    xem.token AS "usertoken",
@@ -298,10 +310,14 @@ class lsuxe_helpers {
                    AND UNIX_TIMESTAMP() > xemm.starttime
                    AND UNIX_TIMESTAMP() < xemm.endtime';
 
+        // Actually get the data.
         $datas = $DB->get_records_sql($sql);
 
+        // Just a check to make sure we have stuff.
         if($datas) {
             foreach ($datas as $data) {
+
+                // Set the group check page params.
                 $gpageparams = [
                     'wstoken' => $data->usertoken,
                     'wsfunction' => 'core_group_get_course_groups',
@@ -309,6 +325,7 @@ class lsuxe_helpers {
                     'courseid' => $data->destcourseid,
                 ];
 
+                // Set the group creation page params.
                 $upageparams = [
                     'wstoken' => $data->usertoken,
                     'wsfunction' => 'core_group_create_groups',
@@ -318,6 +335,7 @@ class lsuxe_helpers {
                     'groups[0][description]' => "From " . $data->destgroupprefix,
                 ];
 
+                // Set the group check defaults.
                 $gdefaults = array(
                     CURLOPT_URL => 'https://' . $data->destmoodle . '/webservice/rest/server.php',
                     CURLOPT_HEADER => 0,
@@ -327,6 +345,7 @@ class lsuxe_helpers {
                     CURLOPT_POSTFIELDS => $gpageparams,
                 );
 
+                // Set the group creation defaults.
                 $udefaults = array(
                     CURLOPT_URL => 'https://' . $data->destmoodle . '/webservice/rest/server.php',
                     CURLOPT_HEADER => 0,
@@ -336,18 +355,28 @@ class lsuxe_helpers {
                     CURLOPT_POSTFIELDS => $upageparams,
                 );
 
+                // Create the curl handler.
                 $ch = curl_init();
+                // Set the curl options.
                 curl_setopt_array($ch, $gdefaults);
 
+                // Run the curl handler and store the returned data.
                 $returndata[] = curl_exec($ch);
+
+                // Close the curl handler.
                 curl_close($ch);
 
+                // Decode the returned data.
                 $returnedgroups = json_decode($returndata[0], true);
 
+                // Loop through the returned groups and try to match the intended group name.
                 foreach ($returnedgroups as $returnedgroup) {
+                    // Build the intended group name.
                     $destgroupnamexp = $data->destgroupprefix . " " . $data->groupname;
+                    // Set the actual remote group name.
                     $destgroupname = $returnedgroup['name'];
 
+                    // If we have a match, store the destination group id and exit the loop.
                     if ($destgroupnamexp == $destgroupname) {
                         $destgroupid = $returnedgroup['id'];
                         break;
@@ -356,21 +385,47 @@ class lsuxe_helpers {
                     }
                 }
 
+                // If we have a destination group id stored in memory.
                 if (isset($destgroupid)) {
+                    // Build the data object for writing to the local DB.
                     $dataobject = [
                         'id' => $data->xemmid,
                         'destgroupid' => $destgroupid,
                     ];
+                    // Write it locally.
                     $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
+                // If we DO NOT have a matching destination group.
                 } else {
-                $ch2 = curl_init();
-                curl_setopt_array($ch2, $udefaults);
+                    // Set up another curl handler.
+                    $ch2 = curl_init();
+                    // Set its options.
+                    curl_setopt_array($ch2, $udefaults);
 
-                $returndata2[] = curl_exec($ch2);
-                curl_close($ch2);
+                    // Execute the curl handler and store the returned data.
+                    $returndata2[] = curl_exec($ch2);
+
+                    // Close the curl handler.
+                    curl_close($ch2);
+
+                    // Decode the json data. 
+                    $returnedgroups2 = json_decode($returndata2[0], true);
+
+                    // Set the returned group id.
+                    $destgroupid2 = $returnedgroups2[0]['id'];
+
+                    // Another sanity check to make sure it's set before we write it.
+                    if (isset($destgroupid2)) {
+                        // Set the data object for writing to our DB.
+                        $dataobject2 = [
+                            'id' => $data->xemmid,
+                            'destgroupid' => $destgroupid2,
+                        ];
+                        // Update the record.
+                        $writeout2 = $DB->update_record('block_lsuxe_mappings', $dataobject2, $bulk=false);
+                    }
                 }
             }
         }
-        return isset($errors) ? $errors : true;
+        return true;
     }
 }
