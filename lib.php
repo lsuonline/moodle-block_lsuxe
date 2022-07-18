@@ -310,7 +310,7 @@ class lsuxe_helpers {
 
                     // Write the data.
                     if ($DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false)) {
-                        mtrace("<br>We found the destination courseid ($destcourseid) for <strong>$data->destshortname</strong>.");
+                        mtrace("<br>We have written the destination courseid ($destcourseid) for <strong>$data->destshortname</strong> to the local DB.");
                     } else {
                         $errors[] = array("DB Write Error" => "The destination course id: $destcourseid could not be written to the local DB.");
                     }
@@ -415,9 +415,11 @@ class lsuxe_helpers {
                     // If we have a match, store the destination group id and exit the loop.
                     if ($destgroupnamexp == $destgroupname) {
                         $destgroupid = $returnedgroup['id'];
+                        mtrace("<br>We found a destination <strong>$destgroupname</strong> group that matches the local group <strong>$destgroupnamexp</strong>.");
                         break;
                     } else {
                         $destgroupid = null;
+                        mtrace("<br>We did not find a remote group matching: <strong>$destgroupnamexp</strong>.");
                     }
                 }
 
@@ -430,6 +432,7 @@ class lsuxe_helpers {
                     ];
                     // Write it locally.
                     $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
+                    mtrace("<br>We have written a destination groupid ($destgroupid) record for <strong>$destgroupnamexp</strong> to the local DB.");
                 // If we DO NOT have a matching destination group.
                 } else {
                     // Set up another curl handler.
@@ -449,6 +452,7 @@ class lsuxe_helpers {
 
                     // Another sanity check to make sure it's set before we write it.
                     if (isset($destgroupid2)) {
+                        mtrace("<br>We have created a remote group <strong>$data->destgroupprefix $data->groupname</strong> with id ($destgroupid2).");
                         // Set the data object for writing to our DB.
                         $dataobject2 = [
                             'id' => $data->xemmid,
@@ -456,6 +460,7 @@ class lsuxe_helpers {
                         ];
                         // Update the record.
                         $writeout2 = $DB->update_record('block_lsuxe_mappings', $dataobject2, $bulk=false);
+                        mtrace("<br>We have written a destination groupid ($destgroupid) record for <strong>$destgroupnamexp</strong> to the local DB.");
                     }
                 }
             }
@@ -661,7 +666,7 @@ class lsuxe_helpers {
                     mtrace("<br>Local user <strong>$luser->username</strong> matches remote user <strong>$ruser->username</strong>.");
                     // Check to see if all the user details match.
                     if ($luser == $ruser) {
-                        mtrace("<br>the local and remote user objects match entirely.");
+                        mtrace("<br>The local and remote user objects match entirely. Skipping.");
                         // Do nothing.
                     } else {
                         mtrace("<br>Something in the user object does not match.");
