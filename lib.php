@@ -48,7 +48,7 @@ class lsuxe_helpers {
      *
      * @return @array of objects
      */
-    public static function get_current_enrollments() {
+    public static function xe_current_enrollments() {
         global $DB, $CFG;
 
         // LSU UES Specific enrollemnt / unenrollment data.
@@ -63,7 +63,7 @@ class lsuxe_helpers {
                 u.idnumber AS "idnumber",
                 u.firstname AS "firstname",
                 u.lastname AS "lastname",
-                u.alternatename AS "alternamtename",
+                u.alternatename AS "alternatename",
                 stu.status AS "status",
                 "student" AS "role",
                 xem.url AS "destmoodle",
@@ -110,7 +110,7 @@ class lsuxe_helpers {
                 u.idnumber AS "idnumber",
                 u.firstname AS "firstname",
                 u.lastname AS "lastname",
-                u.alternatename AS "alternamtename",
+                u.alternatename AS "alternatename",
                 stu.status AS "status",
                 "editingteacher" AS "role",
                 xem.url AS "destmoodle",
@@ -156,7 +156,7 @@ class lsuxe_helpers {
                 u.idnumber AS "idnumber",
                 u.firstname AS "firstname",
                 u.lastname AS "lastname",
-                u.alternatename AS "alternamtename",
+                u.alternatename AS "alternatename",
                 IF(ue.status = 0, "enrolled", "unenrolled") AS "status",
                 mr.shortname AS "role",
                 xem.url AS "destmoodle",
@@ -270,10 +270,12 @@ class lsuxe_helpers {
                 $ch = curl_init();
                 curl_setopt_array($ch, $defaults);
 
-                $returndata[] = curl_exec($ch);
+                unset($returndata);
+                $returndata = curl_exec($ch);
+
                 curl_close($ch);
 
-                $destcourseid = json_decode($returndata[0], true)['courses'][0]['id'];
+                $destcourseid = json_decode($returndata, true)['courses'][0]['id'];
 
                 $dataobject = [
                     'id' => $data->xemmid,
@@ -361,13 +363,14 @@ class lsuxe_helpers {
                 curl_setopt_array($ch, $gdefaults);
 
                 // Run the curl handler and store the returned data.
-                $returndata[] = curl_exec($ch);
+                unset($returndata);
+                $returndata = curl_exec($ch);
 
                 // Close the curl handler.
                 curl_close($ch);
 
                 // Decode the returned data.
-                $returnedgroups = json_decode($returndata[0], true);
+                $returnedgroups = json_decode($returndata, true);
 
                 // Loop through the returned groups and try to match the intended group name.
                 foreach ($returnedgroups as $returnedgroup) {
@@ -402,16 +405,14 @@ class lsuxe_helpers {
                     curl_setopt_array($ch2, $udefaults);
 
                     // Execute the curl handler and store the returned data.
-                    $returndata2[] = curl_exec($ch2);
+                    unset($returndata);
+                    $returndata2 = curl_exec($ch2);
 
                     // Close the curl handler.
                     curl_close($ch2);
 
                     // Decode the json data. 
-                    $returnedgroups2 = json_decode($returndata2[0], true);
-
-                    // Set the returned group id.
-                    $destgroupid2 = $returnedgroups2[0]['id'];
+                    $destgroupid2 = json_decode($returndata2, true)[0]['id'];
 
                     // Another sanity check to make sure it's set before we write it.
                     if (isset($destgroupid2)) {
@@ -427,5 +428,227 @@ class lsuxe_helpers {
             }
         }
         return true;
+    }
+
+    public static function xe_get_users() {
+        global $CFG, $DB;
+
+        $lsql = 'SELECT u.id AS "userid",
+                u.username AS "username",
+                u.email AS "email",
+                u.idnumber AS "idnumber",
+                u.firstname AS "firstname",
+                u.lastname AS "lastname",
+                u.alternatename AS "alternatename",
+                u.auth AS "auth",
+                xem.url AS "destmoodle",
+                xem.token AS "usertoken"
+            FROM {course} c
+                INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
+                INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
+                INNER JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
+                INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
+                INNER JOIN {enrol_ues_students} stu ON stu.sectionid = sec.id
+                INNER JOIN {user} u ON u.id = stu.userid
+                INNER JOIN {enrol} e ON e.courseid = c.id
+                    AND e.enrol = "ues"
+                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                    AND ue.userid = u.id
+                INNER JOIN {groups} g ON g.courseid = c.id
+                    AND g.id = xemm.groupid
+                    AND g.name = xemm.groupname
+                    AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
+                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+            WHERE sec.idnumber IS NOT NULL
+                AND sec.idnumber <> ""
+                AND xemm.destcourseid IS NOT NULL
+                AND xemm.destgroupid IS NOT NULL
+                AND UNIX_TIMESTAMP() > xemm.starttime
+                AND UNIX_TIMESTAMP() < xemm.endtime
+
+            UNION
+
+            SELECT u.id AS "userid",
+                u.username AS "username",
+                u.email AS "email",
+                u.idnumber AS "idnumber",
+                u.firstname AS "firstname",
+                u.lastname AS "lastname",
+                u.alternatename AS "alternatename",
+                u.auth AS "auth",
+                xem.url AS "destmoodle",
+                xem.token AS "usertoken"
+            FROM {course} c
+                INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
+                INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
+                INNER JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
+                INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
+                INNER JOIN {enrol_ues_teachers} stu ON stu.sectionid = sec.id
+                INNER JOIN {user} u ON u.id = stu.userid
+                INNER JOIN {enrol} e ON e.courseid = c.id
+                    AND e.enrol = "ues"
+                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                    AND ue.userid = u.id
+                INNER JOIN {groups} g ON g.courseid = c.id
+                    AND g.id = xemm.groupid
+                    AND g.name = xemm.groupname
+                    AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
+                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+            WHERE sec.idnumber IS NOT NULL
+                AND sec.idnumber <> ""
+                AND xemm.destcourseid IS NOT NULL
+                AND xemm.destgroupid IS NOT NULL
+                AND UNIX_TIMESTAMP() > xemm.starttime
+                AND UNIX_TIMESTAMP() < xemm.endtime
+
+            GROUP BY userid';
+
+        $gsql = 'u.id AS "userid",
+                u.username AS "username",
+                u.email AS "email",
+                u.idnumber AS "idnumber",
+                u.firstname AS "firstname",
+                u.lastname AS "lastname",
+                u.alternatename AS "alternatename",
+                u.auth AS "auth",
+                xem.url AS "destmoodle",
+                xem.token AS "usertoken"
+            FROM {course} c
+                INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
+                INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
+                INNER JOIN {enrol} e ON e.courseid = c.id
+                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
+                INNER JOIN {user} u ON u.id = ue.userid
+                INNER JOIN {role_assignments} mra ON mra.userid = ue.userid
+                    AND mra.userid = u.id
+                INNER JOIN {role} mr ON mra.roleid = mr.id
+                INNER JOIN {context} ctx ON mra.contextid = ctx.id
+                    AND ctx.instanceid = c.id
+                    AND ctx.contextlevel = "50"
+                INNER JOIN {groups} g ON g.courseid = c.id
+                INNER JOIN {groups_members} gm ON gm.groupid = g.id
+                    AND u.id = gm.userid
+            WHERE xemm.destcourseid IS NOT NULL
+                AND xemm.destgroupid IS NOT NULL
+                AND UNIX_TIMESTAMP() > xemm.starttime
+                AND UNIX_TIMESTAMP() < xemm.endtime';
+
+        // Check to see if we're forcing Moodle enrollment.
+        $ues = isset($CFG->xeforceenroll) == 0 ? true : false;
+
+        // Based on the config and if we're using ues, use the appropriate SQL.
+        $sql = $ues && self::is_ues() ? $lsql : $gsql;
+
+        // Get the enrollment / unenrollment data.
+        $users = $DB->get_records_sql($sql);
+
+        // Return the data.
+        return $users;
+    }
+
+    public static function xe_remote_user_helper() {
+
+        $users = self::xe_get_users();
+        foreach ($users as $user) {
+
+                // Set the group check page params.
+                unset($gpageparams);
+                $gpageparams = [
+                    'wstoken' => $user->usertoken,
+                    'wsfunction' => 'core_user_get_users',
+                    'moodlewsrestformat' => 'json',
+                    'criteria[0][key]' => 'username',
+                    'criteria[0][value]' => $user->username,
+                ];
+
+                // Set the group creation page params.
+                $upageparams = [
+                    'wstoken' => $user->usertoken,
+                    'wsfunction' => 'core_user_update_users',
+                    'moodlewsrestformat' => 'json',
+                    'users[0][username]' => $user->username,
+                    'users[0][email]' => $user->email,
+                    'users[0][auth]' => $user->auth,
+                    'users[0][firstname]' => $user->firstname,
+                    'users[0][lastname]' => $user->lastname,
+                    'users[0][alternatename]' => $user->alternatename,
+                    'users[0][email]' => $user->email,
+                    'users[0][idnumber]' => $user->idnumber,
+                ];
+
+                // Set the group check defaults.
+                unset($gdefaults);
+                $gdefaults = array(
+                    CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+                    CURLOPT_HEADER => 0,
+                    CURLOPT_RETURNTRANSFER => TRUE,
+                    CURLOPT_TIMEOUT => 4,
+                    CURLOPT_POST => false,
+                    CURLOPT_POSTFIELDS => $gpageparams,
+                );
+
+                // Set the group creation defaults.
+                $udefaults = array(
+                    CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+                    CURLOPT_HEADER => 0,
+                    CURLOPT_RETURNTRANSFER => TRUE,
+                    CURLOPT_TIMEOUT => 4,
+                    CURLOPT_POST => false,
+                    CURLOPT_POSTFIELDS => $upageparams,
+                );
+
+                // Create the curl handler.
+                $ch = curl_init();
+                // Set the curl options.
+                curl_setopt_array($ch, $gdefaults);
+
+                // Run the curl handler and store the returned data.
+                unset($returndata);
+                $returndata = curl_exec($ch);
+
+                // Close the curl handler.
+                curl_close($ch);
+
+                // Decode the returned data.
+                $returnedusers        = json_decode($returndata, true);
+
+                // Set up the remote user object.
+                $ruser                = new stdClass();
+                $ruser->username      = $returnedusers['users'][0]['username'];
+                $ruser->email         = $returnedusers['users'][0]['email'];
+                $ruser->idnumber      = $returnedusers['users'][0]['idnumber'];
+                $ruser->firstname     = $returnedusers['users'][0]['firstname'];
+                $ruser->lastname      = $returnedusers['users'][0]['lastname'];
+                $ruser->alternatename = isset($returnedusers['users'][0]['alternatename']) ? $returnedusers['users'][0]['alternatename'] : null;
+                $ruser->auth          = $returnedusers['users'][0]['auth'];
+
+                // Set up the local user object.
+                $luser                = new stdClass();
+                $luser->username      = $user->username;
+                $luser->email         = $user->email;
+                $luser->idnumber      = $user->idnumber;
+                $luser->firstname     = $user->firstname;
+                $luser->lastname      = $user->lastname;
+                $luser->alternatename = $user->alternatename;
+                $luser->auth          = $user->auth;
+
+                if ($luser->username == $ruser->username) {
+                    echo"<br>Local user <strong>$luser->username</strong> matches remote user <strong>$ruser->username</strong>.";
+                    // Check to see if all the user details match.
+                    if ($luser == $ruser) {
+                        echo"<br>the local and remote user objects match entirely.";
+                        // Do nothing.
+                    } else {
+                        echo"<br>Something in the user object does not match, update the remote user.";
+                        // Update the user.
+                    }
+                } else {
+                  echo"<br>User $luser->username not found on remote system, create them.";
+                  // Create the user.
+                }
+
+                $remoteusers[] = $returnedusers['users'][0];
+        }
+        return $remoteusers;
     }
 }
