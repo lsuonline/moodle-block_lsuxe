@@ -276,6 +276,7 @@ class lsuxe_helpers {
                 curl_close($ch);
 
                 $destcourseid = json_decode($returndata, true)['courses'][0]['id'];
+                $errors[] = json_decode($returndata, true)['courses'][1];
 
                 $dataobject = [
                     'id' => $data->xemmid,
@@ -561,21 +562,6 @@ class lsuxe_helpers {
                     'criteria[0][value]' => $user->username,
                 ];
 
-                // Set the group creation page params.
-                $upageparams = [
-                    'wstoken' => $user->usertoken,
-                    'wsfunction' => 'core_user_update_users',
-                    'moodlewsrestformat' => 'json',
-                    'users[0][username]' => $user->username,
-                    'users[0][email]' => $user->email,
-                    'users[0][auth]' => $user->auth,
-                    'users[0][firstname]' => $user->firstname,
-                    'users[0][lastname]' => $user->lastname,
-                    'users[0][alternatename]' => $user->alternatename,
-                    'users[0][email]' => $user->email,
-                    'users[0][idnumber]' => $user->idnumber,
-                ];
-
                 // Set the group check defaults.
                 unset($gdefaults);
                 $gdefaults = array(
@@ -585,16 +571,6 @@ class lsuxe_helpers {
                     CURLOPT_TIMEOUT => 4,
                     CURLOPT_POST => false,
                     CURLOPT_POSTFIELDS => $gpageparams,
-                );
-
-                // Set the group creation defaults.
-                $udefaults = array(
-                    CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
-                    CURLOPT_HEADER => 0,
-                    CURLOPT_RETURNTRANSFER => TRUE,
-                    CURLOPT_TIMEOUT => 4,
-                    CURLOPT_POST => false,
-                    CURLOPT_POSTFIELDS => $upageparams,
                 );
 
                 // Create the curl handler.
@@ -614,13 +590,13 @@ class lsuxe_helpers {
 
                 // Set up the remote user object.
                 $ruser                = new stdClass();
-                $ruser->username      = $returnedusers['users'][0]['username'];
-                $ruser->email         = $returnedusers['users'][0]['email'];
-                $ruser->idnumber      = $returnedusers['users'][0]['idnumber'];
-                $ruser->firstname     = $returnedusers['users'][0]['firstname'];
-                $ruser->lastname      = $returnedusers['users'][0]['lastname'];
+                $ruser->username      = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['username'] : null;
+                $ruser->email         = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['email'] : null;
+                $ruser->idnumber      = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['idnumber'] : null;
+                $ruser->firstname     = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['firstname'] : null;
+                $ruser->lastname      = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['lastname'] : null;
                 $ruser->alternatename = isset($returnedusers['users'][0]['alternatename']) ? $returnedusers['users'][0]['alternatename'] : null;
-                $ruser->auth          = $returnedusers['users'][0]['auth'];
+                $ruser->auth          = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['auth'] : null;
 
                 // Set up the local user object.
                 $luser                = new stdClass();
@@ -632,23 +608,110 @@ class lsuxe_helpers {
                 $luser->alternatename = $user->alternatename;
                 $luser->auth          = $user->auth;
 
+                $ruserid              = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['id'] : null;
+
                 if ($luser->username == $ruser->username) {
-                    echo"<br>Local user <strong>$luser->username</strong> matches remote user <strong>$ruser->username</strong>.";
+                    mtrace("<br>Local user <strong>$luser->username</strong> matches remote user <strong>$ruser->username</strong>.");
                     // Check to see if all the user details match.
                     if ($luser == $ruser) {
-                        echo"<br>the local and remote user objects match entirely.";
+                        mtrace("<br>the local and remote user objects match entirely.");
                         // Do nothing.
                     } else {
-                        echo"<br>Something in the user object does not match, update the remote user.";
+                        mtrace("<br>Something in the user object does not match.");
                         // Update the user.
+
+                        // Set the user update page params.
+                        $upageparams = [
+                            'wstoken' => $user->usertoken,
+                            'wsfunction' => 'core_user_update_users',
+                            'moodlewsrestformat' => 'json',
+                            'users[0][id]' => $ruserid,
+                            'users[0][username]' => $luser->username,
+                            'users[0][email]' => $luser->email,
+                            'users[0][auth]' => $luser->auth,
+                            'users[0][firstname]' => $luser->firstname,
+                            'users[0][lastname]' => $luser->lastname,
+                            'users[0][alternatename]' => $luser->alternatename,
+                            'users[0][email]' => $luser->email,
+                            'users[0][idnumber]' => $luser->idnumber,
+                        ];
+
+                        // Set the user update defaults.
+                        $udefaults = array(
+                            CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+                            CURLOPT_HEADER => 0,
+                            CURLOPT_RETURNTRANSFER => TRUE,
+                            CURLOPT_TIMEOUT => 4,
+                            CURLOPT_POST => false,
+                            CURLOPT_POSTFIELDS => $upageparams,
+                        );
+
+                        // Create the curl handler.
+                        $chu = curl_init();
+
+                        // Set the curl options.
+                        curl_setopt_array($chu, $udefaults);
+
+                        // Run the curl handler and store the returned data.
+                        unset($returnudata);
+                        $returnudata = curl_exec($chu);
+
+                        // Close the curl handler.
+                        curl_close($chu);
+
+                        $returneduserupdate = json_decode($returnudata, true);
+                        mtrace("<br>Updated the remote user info for userid $ruserid and username <strong>$luser->username</strong>.");
                     }
                 } else {
-                  echo"<br>User $luser->username not found on remote system, create them.";
-                  // Create the user.
+                    mtrace("<br>User <strong>$luser->username</strong> not found on remote system, create them.");
+
+                    // Set the user creation page params.
+                    $cpageparams = [
+                        'wstoken' => $user->usertoken,
+                        'wsfunction' => 'core_user_create_users',
+                        'moodlewsrestformat' => 'json',
+                        'users[0][username]' => $luser->username,
+                        'users[0][email]' => $luser->email,
+                        'users[0][auth]' => $luser->auth,
+                        'users[0][firstname]' => $luser->firstname,
+                        'users[0][lastname]' => $luser->lastname,
+                        'users[0][alternatename]' => $luser->alternatename,
+                        'users[0][email]' => $luser->email,
+                        'users[0][idnumber]' => $luser->idnumber,
+                    ];
+
+                    // Set the user update defaults.
+                    $cdefaults = array(
+                        CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+                        CURLOPT_HEADER => 0,
+                        CURLOPT_RETURNTRANSFER => TRUE,
+                        CURLOPT_TIMEOUT => 4,
+                        CURLOPT_POST => false,
+                        CURLOPT_POSTFIELDS => $cpageparams,
+                    );
+
+                    // Create the curl handler.
+                    $chc = curl_init();
+
+                    // Set the curl options.
+                    curl_setopt_array($chc, $cdefaults);
+
+                    // Run the curl handler and store the returned data.
+                    unset($returncdata);
+                    $returncdata = curl_exec($chc);
+
+                    // Close the curl handler.
+                    curl_close($chc);
+
+                    $returnedusercreate = json_decode($returncdata, true);
+
+                    $errors[] = $returnedusercreate[1];
+
+                    mtrace("<br>Created the missing remote user matching username: <strong>$luser->username</strong>.");
                 }
 
-                $remoteusers[] = $returnedusers['users'][0];
+           //    $remoteusers[] = isset($returnedusers['users'][0]) ? $returnedusers['users'][0] : null;
         }
-        return $remoteusers;
+  //      return $remoteusers;
     }
 }
