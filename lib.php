@@ -236,6 +236,7 @@ class lsuxe_helpers {
     public static function xe_write_destcourse() {
         global $DB;
 
+        // Build the SQL for grabbing the data.
         $sql = 'SELECT xemm.id AS xemmid,
                    xem.url AS "destmoodle",
                    xem.token AS "usertoken",
@@ -246,10 +247,16 @@ class lsuxe_helpers {
                    AND UNIX_TIMESTAMP() > xemm.starttime
                    AND UNIX_TIMESTAMP() < xemm.endtime';
 
+        // Get the data from the SQL.
         $datas = $DB->get_records_sql($sql);
 
+        // Sanity check to make sure we have data.
         if($datas) {
+
+            // Loop through the data we got above.
             foreach ($datas as $data) {
+
+                // Set the page params for our curl requests.
                 $pageparams = [
                     'wstoken' => $data->usertoken,
                     'wsfunction' => 'core_course_get_courses_by_field',
@@ -258,6 +265,7 @@ class lsuxe_helpers {
                     'value' => $data->destshortname,
                 ];
 
+                // Set the defaults for our curl requests.
                 $defaults = array(
                     CURLOPT_URL => 'https://' . $data->destmoodle . '/webservice/rest/server.php',
                     CURLOPT_HEADER => 0,
@@ -267,25 +275,49 @@ class lsuxe_helpers {
                     CURLOPT_POSTFIELDS => $pageparams,
                 );
 
+                mtrace("<br>Checking for a remote courseid for <strong>$data->destshortname</strong>.");
+                // Instantiate the curl handler.
                 $ch = curl_init();
+
+                // Set the curl options.
                 curl_setopt_array($ch, $defaults);
 
+                // Unset this otherwise it does not overwrite.
                 unset($returndata);
+
+                // Execute the curl handler.
                 $returndata = curl_exec($ch);
 
+                // Close the curl handler.
                 curl_close($ch);
 
-                $destcourseid = json_decode($returndata, true)['courses'][0]['id'];
-                $errors[] = json_decode($returndata, true)['courses'][1];
+                // Get the destination course id if we found one.
+                $destcourseid = isset(json_decode($returndata, true)['courses'][0])
+                                ? json_decode($returndata, true)['courses'][0]['id']
+                                : null;
 
-                $dataobject = [
-                    'id' => $data->xemmid,
-                    'destcourseid' => $destcourseid,
-                ];
+                // Add to the empty errors array if we have any errors.
+                $errors[] = isset(json_decode($returndata, true)['courses'][1]) ? json_decode($returndata, true)['courses'][1] : null;
 
-                $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
+                // If we have a destination course id, update the DB.
+                if (isset($destcourseid)) {
+                    mtrace("<br>We found the destination courseid ($destcourseid) for <strong>$data->destshortname</strong>.");
+                    // Set the required data object.
+                    $dataobject = [
+                        'id' => $data->xemmid,
+                        'destcourseid' => $destcourseid,
+                    ];
+
+                    // Write the data.
+                    if ($DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false)) {
+                        mtrace("<br>We found the destination courseid ($destcourseid) for <strong>$data->destshortname</strong>.");
+                    } else {
+                        $errors[] = array("DB Write Error" => "The destination course id: $destcourseid could not be written to the local DB.");
+                    }
+                }
             }
         }
+        // Return any errors we might have.
         return isset($errors) ? $errors : true;
     }
 
@@ -358,7 +390,7 @@ class lsuxe_helpers {
                     CURLOPT_POSTFIELDS => $upageparams,
                 );
 
-                // Create the curl handler.
+                // Instantiate the curl handler.
                 $ch = curl_init();
                 // Set the curl options.
                 curl_setopt_array($ch, $gdefaults);
@@ -431,9 +463,15 @@ class lsuxe_helpers {
         return true;
     }
 
+    /**
+     * Function to grab local users who will be cross enrolled.
+     *
+     * @return @array of user @objects
+     */
     public static function xe_get_users() {
         global $CFG, $DB;
 
+        // Set the LSU UES SQL for grabbiong users.
         $lsql = 'SELECT u.id AS "userid",
                 u.username AS "username",
                 u.email AS "email",
@@ -466,6 +504,7 @@ class lsuxe_helpers {
                 AND xemm.destgroupid IS NOT NULL
                 AND UNIX_TIMESTAMP() > xemm.starttime
                 AND UNIX_TIMESTAMP() < xemm.endtime
+                AND CONCAT("https://", xem.url) <> "' . $CFG->wwwroot . '"
 
             UNION
 
@@ -501,9 +540,10 @@ class lsuxe_helpers {
                 AND xemm.destgroupid IS NOT NULL
                 AND UNIX_TIMESTAMP() > xemm.starttime
                 AND UNIX_TIMESTAMP() < xemm.endtime
-
+                AND CONCAT("https://", xem.url) <> "' . $CFG->wwwroot . '"
             GROUP BY userid';
 
+        // Set the generic SQL for grabbing users.
         $gsql = 'u.id AS "userid",
                 u.username AS "username",
                 u.email AS "email",
@@ -532,7 +572,8 @@ class lsuxe_helpers {
             WHERE xemm.destcourseid IS NOT NULL
                 AND xemm.destgroupid IS NOT NULL
                 AND UNIX_TIMESTAMP() > xemm.starttime
-                AND UNIX_TIMESTAMP() < xemm.endtime';
+                AND UNIX_TIMESTAMP() < xemm.endtime
+                AND CONCAT("https://", xem.url) <> "' . $CFG->wwwroot . '"';
 
         // Check to see if we're forcing Moodle enrollment.
         $ues = isset($CFG->xeforceenroll) == 0 ? true : false;
@@ -547,8 +588,14 @@ class lsuxe_helpers {
         return $users;
     }
 
+    /**
+     * Function to grab destination suers if they exsit.
+     * If the destination user is not present, create them.
+     * If the destination user exists but not all fields match, update.
+     *
+     * @return @array of $errors
+     */
     public static function xe_remote_user_helper() {
-
         $users = self::xe_get_users();
         foreach ($users as $user) {
 
@@ -660,7 +707,11 @@ class lsuxe_helpers {
                         curl_close($chu);
 
                         $returneduserupdate = json_decode($returnudata, true);
-                        mtrace("<br>Updated the remote user info for userid $ruserid and username <strong>$luser->username</strong>.");
+                        if (isset($returneduserupdate['0'])) {
+                            mtrace("<br>Updated the remote user info for userid $ruserid and username <strong>$luser->username</strong>.");
+                        } else if (isset($returneduserupdate['1'])) {
+                            $errors[] = $returneduserupdate['1'];
+                        }
                     }
                 } else {
                     mtrace("<br>User <strong>$luser->username</strong> not found on remote system, create them.");
@@ -705,13 +756,21 @@ class lsuxe_helpers {
 
                     $returnedusercreate = json_decode($returncdata, true);
 
-                    $errors[] = $returnedusercreate[1];
 
-                    mtrace("<br>Created the missing remote user matching username: <strong>$luser->username</strong>.");
+                    if ($returnedusercreate[0]['id']) {
+                        mtrace("<br>Created the missing remote user matching username: <strong>$luser->username</strong>.");
+                    } else if (isset($returnedusercreate[1])) {
+                        $errors[] = $returnedusercreate[1];
+                    }
                 }
 
            //    $remoteusers[] = isset($returnedusers['users'][0]) ? $returnedusers['users'][0] : null;
         }
+if (isset($errors)) {
+    echo"<pre>Errors: ";
+    var_dump($errors);
+    echo"</pre>";
+}
   //      return $remoteusers;
     }
 }
