@@ -23,8 +23,6 @@
 
 
 defined('MOODLE_INTERNAL') || die();
-// require_once('../../config.php');
-
 class lsuxe_helpers {
 
 
@@ -46,7 +44,7 @@ class lsuxe_helpers {
     /**
      * Function to grab current enrollments for future use.
      *
-     * @return @array of objects
+     * @return @array of $user objects.
      */
     public static function xe_current_enrollments() {
         global $DB, $CFG;
@@ -209,9 +207,9 @@ class lsuxe_helpers {
         return $enrolls;
     }
 
-
     /**
      * Function to count records in the UES section table.
+     * This will determine if we're using LSU's enrollment method.
      *
      * @return @bool
      */
@@ -238,11 +236,11 @@ class lsuxe_helpers {
     }
 
     /**
-     * Function to grab the destination course id and write it locally.
+     * Function to grab the destination courseid.
      *
      * @return @array of objects
      */
-    public static function xe_write_destcourse() {
+    public static function xe_get_destcourse() {
         global $DB;
 
         // Build the SQL for grabbing the data.
@@ -257,72 +255,81 @@ class lsuxe_helpers {
                    AND UNIX_TIMESTAMP() < xemm.endtime';
 
         // Get the data from the SQL.
-        $datas = $DB->get_records_sql($sql);
+        $courses = $DB->get_records_sql($sql);
 
-        // Sanity check to make sure we have data.
-        if($datas) {
+        return $courses;
+    }
 
-            // Loop through the data we got above.
-            foreach ($datas as $data) {
+    /**
+     * Function to grab the destination course id and write it locally.
+     *
+     * @return @array of objects
+     */
+    public static function xe_write_destcourse() {
+        global $DB;
 
-                // Set the page params for our curl requests.
-                $pageparams = [
-                    'wstoken' => $data->usertoken,
-                    'wsfunction' => 'core_course_get_courses_by_field',
-                    'moodlewsrestformat' => 'json',
-                    'field' => 'shortname',
-                    'value' => $data->destshortname,
+        // Grab the list.
+        $courses = self::xe_get_destcourse();
+
+        // Loop through the data we got above.
+        foreach ($courses as $course) {
+            // Set the page params for our curl requests.
+            $pageparams = [
+                'wstoken' => $course->usertoken,
+                'wsfunction' => 'core_course_get_courses_by_field',
+                'moodlewsrestformat' => 'json',
+                'field' => 'shortname',
+                'value' => $course->destshortname,
+            ];
+
+            // Set the defaults for our curl requests.
+            $defaults = array(
+                CURLOPT_URL => 'https://' . $course->destmoodle . '/webservice/rest/server.php',
+                CURLOPT_HEADER => 0,
+                CURLOPT_RETURNTRANSFER => TRUE,
+                CURLOPT_TIMEOUT => 4,
+                CURLOPT_POST => false,
+                CURLOPT_POSTFIELDS => $pageparams,
+            );
+
+            mtrace("<br>Checking for a remote courseid for <strong>$course->destshortname</strong>.");
+            // Instantiate the curl handler.
+            $ch = curl_init();
+
+            // Set the curl options.
+            curl_setopt_array($ch, $defaults);
+
+            // Unset this otherwise it does not overwrite.
+            unset($returndata);
+
+            // Execute the curl handler.
+            $returndata = curl_exec($ch);
+
+            // Close the curl handler.
+            curl_close($ch);
+
+            // Get the destination course id if we found one.
+            $destcourseid = isset(json_decode($returndata, true)['courses'][0])
+                            ? json_decode($returndata, true)['courses'][0]['id']
+                            : null;
+
+            // Add to the empty errors array if we have any errors.
+            $errors[] = isset(json_decode($returndata, true)['courses'][1]) ? json_decode($returndata, true)['courses'][1] : null;
+
+            // If we have a destination course id, update the DB.
+            if (isset($destcourseid)) {
+                mtrace("<br>We found the destination courseid ($destcourseid) for <strong>$course->destshortname</strong>.");
+                // Set the required data object.
+                $dataobject = [
+                    'id' => $course->xemmid,
+                    'destcourseid' => $destcourseid,
                 ];
 
-                // Set the defaults for our curl requests.
-                $defaults = array(
-                    CURLOPT_URL => 'https://' . $data->destmoodle . '/webservice/rest/server.php',
-                    CURLOPT_HEADER => 0,
-                    CURLOPT_RETURNTRANSFER => TRUE,
-                    CURLOPT_TIMEOUT => 4,
-                    CURLOPT_POST => false,
-                    CURLOPT_POSTFIELDS => $pageparams,
-                );
-
-                mtrace("<br>Checking for a remote courseid for <strong>$data->destshortname</strong>.");
-                // Instantiate the curl handler.
-                $ch = curl_init();
-
-                // Set the curl options.
-                curl_setopt_array($ch, $defaults);
-
-                // Unset this otherwise it does not overwrite.
-                unset($returndata);
-
-                // Execute the curl handler.
-                $returndata = curl_exec($ch);
-
-                // Close the curl handler.
-                curl_close($ch);
-
-                // Get the destination course id if we found one.
-                $destcourseid = isset(json_decode($returndata, true)['courses'][0])
-                                ? json_decode($returndata, true)['courses'][0]['id']
-                                : null;
-
-                // Add to the empty errors array if we have any errors.
-                $errors[] = isset(json_decode($returndata, true)['courses'][1]) ? json_decode($returndata, true)['courses'][1] : null;
-
-                // If we have a destination course id, update the DB.
-                if (isset($destcourseid)) {
-                    mtrace("<br>We found the destination courseid ($destcourseid) for <strong>$data->destshortname</strong>.");
-                    // Set the required data object.
-                    $dataobject = [
-                        'id' => $data->xemmid,
-                        'destcourseid' => $destcourseid,
-                    ];
-
-                    // Write the data.
-                    if ($DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false)) {
-                        mtrace("<br>We have written the destination courseid ($destcourseid) for <strong>$data->destshortname</strong> to the local DB.");
-                    } else {
-                        $errors[] = array("DB Write Error" => "The destination course id: $destcourseid could not be written to the local DB.");
-                    }
+                // Write the data.
+                if ($DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false)) {
+                    mtrace("<br>We have written the destination courseid ($destcourseid) for <strong>$course->destshortname</strong> to the local DB.");
+                } else {
+                    $errors[] = array("DB Write Error" => "The destination course id: $destcourseid could not be written to the local DB.");
                 }
             }
         }
@@ -332,12 +339,10 @@ class lsuxe_helpers {
 
     /**
      * Function to grab destination group id if it exsits.
-     * Write the existing group id locally.
-     * If the destination group is not present, create it.
      *
      * @return true
      */
-    public static function xe_write_destgroup() {
+    public static function xe_get_groups() {
         global $DB;
 
         // Build the SQL to get the appropriate data for the webservice.
@@ -355,132 +360,162 @@ class lsuxe_helpers {
                    AND UNIX_TIMESTAMP() < xemm.endtime';
 
         // Actually get the data.
-        $datas = $DB->get_records_sql($sql);
+        $groups = $DB->get_records_sql($sql);
 
-        // Just a check to make sure we have stuff.
-        if($datas) {
-            foreach ($datas as $data) {
+        return $groups;
+    }
 
-                // Set the group check page params.
-                $gpageparams = [
-                    'wstoken' => $data->usertoken,
-                    'wsfunction' => 'core_group_get_course_groups',
-                    'moodlewsrestformat' => 'json',
-                    'courseid' => $data->destcourseid,
-                ];
+    /**
+     * Function to grab a matching desintation group id.
+     *
+     * @return @int $destgroupid
+     */
+    public static function xe_get_destgroup($group) {
+        // Set the group check page params.
+        $pageparams = [
+            'wstoken' => $group->usertoken,
+            'wsfunction' => 'core_group_get_course_groups',
+            'moodlewsrestformat' => 'json',
+            'courseid' => $group->destcourseid,
+        ];
 
-                // Set the group creation page params.
-                $upageparams = [
-                    'wstoken' => $data->usertoken,
-                    'wsfunction' => 'core_group_create_groups',
-                    'moodlewsrestformat' => 'json',
-                    'groups[0][courseid]' => $data->destcourseid,
-                    'groups[0][name]' => $data->destgroupprefix . " " . $data->groupname,
-                    'groups[0][description]' => "From " . $data->destgroupprefix,
-                ];
+        // Set the group check defaults.
+        $defaults = array(
+            CURLOPT_URL => 'https://' . $group->destmoodle . '/webservice/rest/server.php',
+            CURLOPT_HEADER => 0,
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_POST => false,
+            CURLOPT_POSTFIELDS => $pageparams,
+        );
 
-                // Set the group check defaults.
-                $gdefaults = array(
-                    CURLOPT_URL => 'https://' . $data->destmoodle . '/webservice/rest/server.php',
-                    CURLOPT_HEADER => 0,
-                    CURLOPT_RETURNTRANSFER => TRUE,
-                    CURLOPT_TIMEOUT => 4,
-                    CURLOPT_POST => false,
-                    CURLOPT_POSTFIELDS => $gpageparams,
-                );
+        // Instantiate the curl handler.
+        $ch = curl_init();
+        // Set the curl options.
+        curl_setopt_array($ch, $defaults);
 
-                // Set the group creation defaults.
-                $udefaults = array(
-                    CURLOPT_URL => 'https://' . $data->destmoodle . '/webservice/rest/server.php',
-                    CURLOPT_HEADER => 0,
-                    CURLOPT_RETURNTRANSFER => TRUE,
-                    CURLOPT_TIMEOUT => 4,
-                    CURLOPT_POST => false,
-                    CURLOPT_POSTFIELDS => $upageparams,
-                );
+        // Run the curl handler and store the returned data.
+        unset($returndata);
+        $returndata = curl_exec($ch);
 
-                // Instantiate the curl handler.
-                $ch = curl_init();
-                // Set the curl options.
-                curl_setopt_array($ch, $gdefaults);
+        // Close the curl handler.
+        curl_close($ch);
 
-                // Run the curl handler and store the returned data.
-                unset($returndata);
-                $returndata = curl_exec($ch);
+        // Decode the returned data.
+        $returnedgroups = json_decode($returndata, true);
 
-                // Close the curl handler.
-                curl_close($ch);
+        // Loop through the returned groups and try to match the intended group name.
+        foreach ($returnedgroups as $returnedgroup) {
+            // Build the intended group name.
+            $destgroupnamexp = $group->destgroupprefix . " " . $group->groupname;
+            // Set the actual remote group name.
+            $destgroupname = $returnedgroup['name'];
 
-                // Decode the returned data.
-                $returnedgroups = json_decode($returndata, true);
-
-                // Loop through the returned groups and try to match the intended group name.
-                foreach ($returnedgroups as $returnedgroup) {
-                    // Build the intended group name.
-                    $destgroupnamexp = $data->destgroupprefix . " " . $data->groupname;
-                    // Set the actual remote group name.
-                    $destgroupname = $returnedgroup['name'];
-
-                    // If we have a match, store the destination group id and exit the loop.
-                    if ($destgroupnamexp == $destgroupname) {
-                        $destgroupid = $returnedgroup['id'];
-                        mtrace("<br>We found a destination <strong>$destgroupname</strong> group that matches the local group <strong>$destgroupnamexp</strong>.");
-                        break;
-                    } else {
-                        $destgroupid = null;
-                        mtrace("<br>We did not find a remote group matching: <strong>$destgroupnamexp</strong>.");
-                    }
-                }
-
-                // If we have a destination group id stored in memory.
-                if (isset($destgroupid)) {
-                    // Build the data object for writing to the local DB.
-                    $dataobject = [
-                        'id' => $data->xemmid,
-                        'destgroupid' => $destgroupid,
-                    ];
-                    // Write it locally.
-                    $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
-                    mtrace("<br>We have written a destination groupid ($destgroupid) record for <strong>$destgroupnamexp</strong> to the local DB.");
-                // If we DO NOT have a matching destination group.
-                } else {
-                    // Set up another curl handler.
-                    $ch2 = curl_init();
-                    // Set its options.
-                    curl_setopt_array($ch2, $udefaults);
-
-                    // Execute the curl handler and store the returned data.
-                    unset($returndata);
-                    $returndata2 = curl_exec($ch2);
-
-                    // Close the curl handler.
-                    curl_close($ch2);
-
-                    // Decode the json data. 
-                    $destgroupid2 = json_decode($returndata2, true)[0]['id'];
-
-                    // Another sanity check to make sure it's set before we write it.
-                    if (isset($destgroupid2)) {
-                        mtrace("<br>We have created a remote group <strong>$data->destgroupprefix $data->groupname</strong> with id ($destgroupid2).");
-                        // Set the data object for writing to our DB.
-                        $dataobject2 = [
-                            'id' => $data->xemmid,
-                            'destgroupid' => $destgroupid2,
-                        ];
-                        // Update the record.
-                        $writeout2 = $DB->update_record('block_lsuxe_mappings', $dataobject2, $bulk=false);
-                        mtrace("<br>We have written a destination groupid ($destgroupid) record for <strong>$destgroupnamexp</strong> to the local DB.");
-                    }
-                }
+            // If we have a match, store the destination group id and exit the loop.
+            if ($destgroupnamexp == $destgroupname) {
+                $destgroupid = $returnedgroup['id'];
+                mtrace("<br>We found a destination <strong>$destgroupname</strong> group that matches the local group <strong>$destgroupnamexp</strong>.");
+                break;
+            } else {
+                $destgroupid = null;
+                mtrace("<br>We did not find a remote group matching: <strong>$destgroupnamexp</strong>.");
             }
         }
-        return true;
+        return $destgroupid;
+    }
+
+    /**
+     * Write the existing group id locally.
+     * If the destination group is not present, create it.
+     *
+     * @return true
+     */
+    public static function xe_write_destgroup($group) {
+        global $DB;
+
+        $destgroupid = self::xe_get_destgroup($group);
+        if (isset($destgroupid)) {
+            // Build the data object for writing to the local DB.
+            $dataobject = [
+                'id' => $group->xemmid,
+                'destgroupid' => $destgroupid,
+            ];
+            // Write it locally.
+            $destgroupnamexp = $group->destgroupprefix . " " . $group->groupname;
+            $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
+            mtrace("<br>We have written a destination groupid ($destgroupid) record for <strong>$destgroupnamexp</strong> to the local DB.");
+        } else {
+            // Create the remote group.
+            $destgroupid = self::xe_create_remote_group($group);
+        }
+    }
+
+    /**
+     * Write the existing group id locally.
+     * If the destination group is not present, create it.
+     *
+     * @return true
+     */
+    public static function xe_write_destgroups($groups) {
+        global $DB;
+
+        foreach ($groups as $group) {
+            $destgroup = self::xe_write_destgroup($group);
+        }
+   }
+
+     public static function xe_create_remote_group($group) {
+        global $DB;
+
+        // Set the group creation page params.
+        $pageparams = [
+            'wstoken' => $group->usertoken,
+            'wsfunction' => 'core_group_create_groups',
+            'moodlewsrestformat' => 'json',
+            'groups[0][courseid]' => $group->destcourseid,
+            'groups[0][name]' => $group->destgroupprefix . " " . $group->groupname,
+            'groups[0][description]' => "From " . $group->destgroupprefix,
+        ];
+
+        // Set the group creation defaults.
+        $defaults = array(
+            CURLOPT_URL => 'https://' . $group->destmoodle . '/webservice/rest/server.php',
+            CURLOPT_HEADER => 0,
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_POST => false,
+            CURLOPT_POSTFIELDS => $pageparams,
+        );
+
+        // Set up another curl handler.
+        $ch = curl_init();
+
+        // Set its options.
+        curl_setopt_array($ch, $defaults);
+
+        // Execute the curl handler and store the returned data.
+        unset($returndata);
+        $returndata = curl_exec($ch);
+
+        // Close the curl handler.
+        curl_close($ch);
+
+        // Decode the json data.
+        $destgroupid = json_decode($returndata, true)[0]['id'];
+
+        // Another sanity check to make sure it's set before we write it.
+        if (isset($destgroupid)) {
+            mtrace("<br>We have created a remote group <strong>$group->destgroupprefix $group->groupname</strong> with id ($destgroupid).");
+            // Set the data object for writing to our DB.
+            self::xe_write_destgroup($group);
+        }
     }
 
     /**
      * Function to grab a destination user if they exsit.
      *
-     * @return @object
+     * @param  @object $user object for the given user.
+     * @return @array
      */
     public static function xe_remote_user_lookup($user) {
 
@@ -526,8 +561,10 @@ class lsuxe_helpers {
     }
 
     /**
-     * If the destination user exists but not all fields match, update.
+     * Check to see if the local user object matches the remote user.
      *
+     * @param  @object $user object for the given user.
+     * @param  @array $returneduser array of parameters for the returned user.
      * @return @bool
      */
     public static function xe_remote_user_match($user, $returneduser) {
@@ -559,20 +596,27 @@ class lsuxe_helpers {
         $luser->auth          = $user->auth;
 
         if ($luser == $ruser) {
-            mtrace("The local ($luser->username) and remote user ($ruser->username) objects match entirely. Skipping.");
+            mtrace("<br>The local ($luser->username) and remote user ($ruser->username) objects match entirely. Skipping.");
             return true;
         } else {
-            mtrace("Something in the user object does not match.");
+            mtrace("<br>Something in the user object does not match.");
             return false;
         }
     }
 
+    /**
+     * If the destination user exists but not all fields match, update.
+     *
+     * @param  @object $user object for the given user.
+     * @param  @array $returneduser array of parameters for the returned user.
+     * @return @bool
+     */
     public static function xe_remote_user_update($user, $returneduser) {
         // Sanity check to short-circuit things.
         if (!isset($returneduser['id'])) {
             return false;
         }
-        
+
         mtrace("<br>We are atttempting to update the remote user "
             . $returneduser['username']
             . " to match the local user $user->username.");
@@ -634,10 +678,11 @@ class lsuxe_helpers {
     /**
      * If the destination user does not exist, create them.
      *
+     * @param  @object $user object for the given user.
      * @return @bool
      */
     public static function xe_remote_user_create($user) {
-        mtrace("User <strong>$user->username</strong> not found on remote system, create them.");
+        mtrace("<br>User <strong>$user->username</strong> not found on remote system, create them.");
 
         // Set the user creation page params.
         $pageparams = [
@@ -692,9 +737,14 @@ class lsuxe_helpers {
         }
     }
 
+    /**
+     * Enroll the user.
+     *
+     * @param  @object $user object for the given user.
+     * @param  @int remoteuserid id of the returned user.
+     * @return @bool
+     */
     public static function xe_enroll_user($user, $remoteuserid) {
-        global $CFG, $DB;
-
         // TODO: Figure out a better way to handle this crap.
         $roleid = $user->role == 'student' ? $user->studentrole : $user->teacherrole;
 
@@ -731,8 +781,10 @@ class lsuxe_helpers {
         // Close the curl handler.
         curl_close($ch);
 
+        // Decode the data.
         $returneduserenrol = json_decode($returndata, true);
 
+        // If there's data, there's an error.
         if (isset($returneduserenrol)) {
             mtrace("<br>" .
                    $returneduserenrol['exception']
@@ -741,16 +793,25 @@ class lsuxe_helpers {
                    . " - " .
                    $returneduserenrol['message']);
         } else {
+            // Success.
             mtrace("<br>Enrolled $user->username with remote userid
                     $remoteuserid as $user->role in
                     the remote courseid $user->destcourseid
                     on https://$user->destmoodle.");
         }
+
+        $returndata = isset($returneduserenrol) ? false : true;
+        return $returndata;
     }
 
+    /**
+     * Unenroll the user.
+     *
+     * @param  @object $user object for the given user.
+     * @param  @int remoteuserid id of the returned user.
+     * @return @bool
+     */
     public static function xe_unenroll_user($user, $remoteuserid) {
-        global $CFG, $DB;
-
         // TODO: Figure out a better way to handle this crap.
         $roleid = $user->role == 'student' ? $user->studentrole : $user->teacherrole;
 
@@ -787,20 +848,83 @@ class lsuxe_helpers {
         // Close the curl handler.
         curl_close($ch);
 
-        $returneduserenrol = json_decode($returndata, true);
+        $returneduserunenrol = json_decode($returndata, true);
 
-        if (isset($returneduserenrol)) {
+        if (isset($returneduserunenrol)) {
             mtrace("<br>" .
-                   $returneduserenrol['exception']
+                   $returneduserunenrol['exception']
                    . " - " .
-                   $returneduserenrol['errorcode']
+                   $returneduserunenrol['errorcode']
                    . " - " .
-                   $returneduserenrol['message']);
+                   $returneduserunenrol['message']);
         } else {
             mtrace("<br>Unenrolled $user->username with remote userid
                     $remoteuserid from $user->role role from
                     the remote courseid $user->destcourseid
                     on https://$user->destmoodle.");
         }
+
+        $returndata = isset($returneduserunenrol) ? false : true;
+        return $returndata;
+    }
+
+    /**
+     * Add user to a group.
+     *
+     * @param  @object $user object for the given user.
+     * @param  @int remoteuserid id of the returned user.
+     * @return @bool
+     */
+    public static function xe_add_user_to_group($user, $remoteuserid) {
+        // Set the group-add page params.
+        $pageparams = [
+            'wstoken' => $user->usertoken,
+            'wsfunction' => 'core_group_add_group_members',
+            'moodlewsrestformat' => 'json',
+            'members[0][userid]' => $remoteuserid,
+            'members[0][groupid]=' => $user->destgroupid,
+        ];
+
+        // Set the group-add defaults.
+        $defaults = array(
+            CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+            CURLOPT_HEADER => 0,
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_POST => false,
+            CURLOPT_POSTFIELDS => $pageparams,
+        );
+
+        // Create the curl handler.
+        $ch = curl_init();
+
+        // Set the curl options.
+        curl_setopt_array($ch, $defaults);
+
+        // Run the curl handler and store the returned data.
+        unset($returndata);
+        $returndata = curl_exec($ch);
+
+        // Close the curl handler.
+        curl_close($ch);
+
+        $returnedgroupenrol = json_decode($returndata, true);
+
+        if (isset($returnedgroupenrol)) {
+            mtrace("<br>" .
+                   $returnedgroupenrol['exception']
+                   . " - " .
+                   $returnedgroupenrol['errorcode']
+                   . " - " .
+                   $returnedgroupenrol['message']);
+        } else {
+            mtrace("<br>Added $user->username with remote userid
+                    $remoteuserid to remote group id $user->destgroupid
+                    in the remote courseid $user->destcourseid
+                    on https://$user->destmoodle.");
+        }
+
+        $returndata = isset($returnedgroupenrol) ? false : true;
+        return $returndata;
     }
 }
