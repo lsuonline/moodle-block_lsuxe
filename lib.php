@@ -66,8 +66,11 @@ class lsuxe_helpers {
                 u.alternatename AS "alternatename",
                 stu.status AS "status",
                 "student" AS "role",
+                u.auth AS "auth",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
+                xem.teacherrole AS "teacherrole",
+                xem.studentrole AS "studentrole",
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
@@ -113,8 +116,11 @@ class lsuxe_helpers {
                 u.alternatename AS "alternatename",
                 stu.status AS "status",
                 "editingteacher" AS "role",
+                u.auth AS "auth",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
+                xem.teacherrole AS "teacherrole",
+                xem.studentrole AS "studentrole",
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
@@ -159,8 +165,11 @@ class lsuxe_helpers {
                 u.alternatename AS "alternatename",
                 IF(ue.status = 0, "enrolled", "unenrolled") AS "status",
                 mr.shortname AS "role",
+                u.auth AS "auth",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
+                xem.teacherrole AS "teacherrole",
+                xem.studentrole AS "studentrole",
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
@@ -469,313 +478,329 @@ class lsuxe_helpers {
     }
 
     /**
-     * Function to grab local users who will be cross enrolled.
+     * Function to grab a destination user if they exsit.
      *
-     * @return @array of user @objects
+     * @return @object
      */
-    public static function xe_get_users() {
-        global $CFG, $DB;
+    public static function xe_remote_user_lookup($user) {
 
-        // Set the LSU UES SQL for grabbiong users.
-        $lsql = 'SELECT u.id AS "userid",
-                u.username AS "username",
-                u.email AS "email",
-                u.idnumber AS "idnumber",
-                u.firstname AS "firstname",
-                u.lastname AS "lastname",
-                u.alternatename AS "alternatename",
-                u.auth AS "auth",
-                xem.url AS "destmoodle",
-                xem.token AS "usertoken"
-            FROM {course} c
-                INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
-                INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
-                INNER JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
-                INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
-                INNER JOIN {enrol_ues_students} stu ON stu.sectionid = sec.id
-                INNER JOIN {user} u ON u.id = stu.userid
-                INNER JOIN {enrol} e ON e.courseid = c.id
-                    AND e.enrol = "ues"
-                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                    AND ue.userid = u.id
-                INNER JOIN {groups} g ON g.courseid = c.id
-                    AND g.id = xemm.groupid
-                    AND g.name = xemm.groupname
-                    AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
-            WHERE sec.idnumber IS NOT NULL
-                AND sec.idnumber <> ""
-                AND xemm.destcourseid IS NOT NULL
-                AND xemm.destgroupid IS NOT NULL
-                AND UNIX_TIMESTAMP() > xemm.starttime
-                AND UNIX_TIMESTAMP() < xemm.endtime
-                AND CONCAT("https://", xem.url) <> "' . $CFG->wwwroot . '"
+        // Set the user check page params.
+        unset($pageparams);
+        $pageparams = [
+            'wstoken' => $user->usertoken,
+            'wsfunction' => 'core_user_get_users',
+            'moodlewsrestformat' => 'json',
+            'criteria[0][key]' => 'username',
+            'criteria[0][value]' => $user->username,
+        ];
 
-            UNION
+        // Set the user check defaults.
+        unset($defaults);
+        $defaults = array(
+            CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+            CURLOPT_HEADER => 0,
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_POST => false,
+            CURLOPT_POSTFIELDS => $pageparams,
+        );
 
-            SELECT u.id AS "userid",
-                u.username AS "username",
-                u.email AS "email",
-                u.idnumber AS "idnumber",
-                u.firstname AS "firstname",
-                u.lastname AS "lastname",
-                u.alternatename AS "alternatename",
-                u.auth AS "auth",
-                xem.url AS "destmoodle",
-                xem.token AS "usertoken"
-            FROM {course} c
-                INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
-                INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
-                INNER JOIN {enrol_ues_sections} sec ON sec.idnumber = c.idnumber
-                INNER JOIN {enrol_ues_courses} cou ON cou.id = sec.courseid
-                INNER JOIN {enrol_ues_teachers} stu ON stu.sectionid = sec.id
-                INNER JOIN {user} u ON u.id = stu.userid
-                INNER JOIN {enrol} e ON e.courseid = c.id
-                    AND e.enrol = "ues"
-                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                    AND ue.userid = u.id
-                INNER JOIN {groups} g ON g.courseid = c.id
-                    AND g.id = xemm.groupid
-                    AND g.name = xemm.groupname
-                    AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
-            WHERE sec.idnumber IS NOT NULL
-                AND sec.idnumber <> ""
-                AND xemm.destcourseid IS NOT NULL
-                AND xemm.destgroupid IS NOT NULL
-                AND UNIX_TIMESTAMP() > xemm.starttime
-                AND UNIX_TIMESTAMP() < xemm.endtime
-                AND CONCAT("https://", xem.url) <> "' . $CFG->wwwroot . '"
-            GROUP BY userid';
+        // Create the curl handler.
+        $ch = curl_init();
 
-        // Set the generic SQL for grabbing users.
-        $gsql = 'u.id AS "userid",
-                u.username AS "username",
-                u.email AS "email",
-                u.idnumber AS "idnumber",
-                u.firstname AS "firstname",
-                u.lastname AS "lastname",
-                u.alternatename AS "alternatename",
-                u.auth AS "auth",
-                xem.url AS "destmoodle",
-                xem.token AS "usertoken"
-            FROM {course} c
-                INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
-                INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
-                INNER JOIN {enrol} e ON e.courseid = c.id
-                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                INNER JOIN {user} u ON u.id = ue.userid
-                INNER JOIN {role_assignments} mra ON mra.userid = ue.userid
-                    AND mra.userid = u.id
-                INNER JOIN {role} mr ON mra.roleid = mr.id
-                INNER JOIN {context} ctx ON mra.contextid = ctx.id
-                    AND ctx.instanceid = c.id
-                    AND ctx.contextlevel = "50"
-                INNER JOIN {groups} g ON g.courseid = c.id
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id
-                    AND u.id = gm.userid
-            WHERE xemm.destcourseid IS NOT NULL
-                AND xemm.destgroupid IS NOT NULL
-                AND UNIX_TIMESTAMP() > xemm.starttime
-                AND UNIX_TIMESTAMP() < xemm.endtime
-                AND CONCAT("https://", xem.url) <> "' . $CFG->wwwroot . '"';
+        // Set the curl options.
+        curl_setopt_array($ch, $defaults);
 
-        // Check to see if we're forcing Moodle enrollment.
-        $ues = isset($CFG->xeforceenroll) == 0 ? true : false;
+        // Run the curl handler and store the returned data.
+        unset($returndata);
+        $returndata = curl_exec($ch);
 
-        // Based on the config and if we're using ues, use the appropriate SQL.
-        $sql = $ues && self::is_ues() ? $lsql : $gsql;
+        // Close the curl handler.
+        curl_close($ch);
 
-        // Get the enrollment / unenrollment data.
-        $users = $DB->get_records_sql($sql);
+        // Decode the returned data.
+        $returneduser = json_decode($returndata, true)['users'];
+        $returneduser = isset($returneduser[0]) ? $returneduser[0] : null;
 
-        // Return the data.
-        return $users;
+        return $returneduser;
     }
 
     /**
-     * Function to grab destination suers if they exsit.
-     * If the destination user is not present, create them.
      * If the destination user exists but not all fields match, update.
      *
-     * @return @array of $errors
+     * @return @bool
      */
-    public static function xe_remote_user_helper() {
-        $users = self::xe_get_users();
-        foreach ($users as $user) {
-
-                // Set the group check page params.
-                unset($gpageparams);
-                $gpageparams = [
-                    'wstoken' => $user->usertoken,
-                    'wsfunction' => 'core_user_get_users',
-                    'moodlewsrestformat' => 'json',
-                    'criteria[0][key]' => 'username',
-                    'criteria[0][value]' => $user->username,
-                ];
-
-                // Set the group check defaults.
-                unset($gdefaults);
-                $gdefaults = array(
-                    CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
-                    CURLOPT_HEADER => 0,
-                    CURLOPT_RETURNTRANSFER => TRUE,
-                    CURLOPT_TIMEOUT => 4,
-                    CURLOPT_POST => false,
-                    CURLOPT_POSTFIELDS => $gpageparams,
-                );
-
-                // Create the curl handler.
-                $ch = curl_init();
-                // Set the curl options.
-                curl_setopt_array($ch, $gdefaults);
-
-                // Run the curl handler and store the returned data.
-                unset($returndata);
-                $returndata = curl_exec($ch);
-
-                // Close the curl handler.
-                curl_close($ch);
-
-                // Decode the returned data.
-                $returnedusers        = json_decode($returndata, true);
-
-                // Set up the remote user object.
-                $ruser                = new stdClass();
-                $ruser->username      = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['username'] : null;
-                $ruser->email         = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['email'] : null;
-                $ruser->idnumber      = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['idnumber'] : null;
-                $ruser->firstname     = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['firstname'] : null;
-                $ruser->lastname      = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['lastname'] : null;
-                $ruser->alternatename = isset($returnedusers['users'][0]['alternatename']) ? $returnedusers['users'][0]['alternatename'] : null;
-                $ruser->auth          = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['auth'] : null;
-
-                // Set up the local user object.
-                $luser                = new stdClass();
-                $luser->username      = $user->username;
-                $luser->email         = $user->email;
-                $luser->idnumber      = $user->idnumber;
-                $luser->firstname     = $user->firstname;
-                $luser->lastname      = $user->lastname;
-                $luser->alternatename = $user->alternatename;
-                $luser->auth          = $user->auth;
-
-                $ruserid              = isset($returnedusers['users'][0]) ? $returnedusers['users'][0]['id'] : null;
-
-                if ($luser->username == $ruser->username) {
-                    mtrace("<br>Local user <strong>$luser->username</strong> matches remote user <strong>$ruser->username</strong>.");
-                    // Check to see if all the user details match.
-                    if ($luser == $ruser) {
-                        mtrace("<br>The local and remote user objects match entirely. Skipping.");
-                        // Do nothing.
-                    } else {
-                        mtrace("<br>Something in the user object does not match.");
-                        // Update the user.
-
-                        // Set the user update page params.
-                        $upageparams = [
-                            'wstoken' => $user->usertoken,
-                            'wsfunction' => 'core_user_update_users',
-                            'moodlewsrestformat' => 'json',
-                            'users[0][id]' => $ruserid,
-                            'users[0][username]' => $luser->username,
-                            'users[0][email]' => $luser->email,
-                            'users[0][auth]' => $luser->auth,
-                            'users[0][firstname]' => $luser->firstname,
-                            'users[0][lastname]' => $luser->lastname,
-                            'users[0][alternatename]' => $luser->alternatename,
-                            'users[0][email]' => $luser->email,
-                            'users[0][idnumber]' => $luser->idnumber,
-                        ];
-
-                        // Set the user update defaults.
-                        $udefaults = array(
-                            CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
-                            CURLOPT_HEADER => 0,
-                            CURLOPT_RETURNTRANSFER => TRUE,
-                            CURLOPT_TIMEOUT => 4,
-                            CURLOPT_POST => false,
-                            CURLOPT_POSTFIELDS => $upageparams,
-                        );
-
-                        // Create the curl handler.
-                        $chu = curl_init();
-
-                        // Set the curl options.
-                        curl_setopt_array($chu, $udefaults);
-
-                        // Run the curl handler and store the returned data.
-                        unset($returnudata);
-                        $returnudata = curl_exec($chu);
-
-                        // Close the curl handler.
-                        curl_close($chu);
-
-                        $returneduserupdate = json_decode($returnudata, true);
-                        if (isset($returneduserupdate['0'])) {
-                            mtrace("<br>Updated the remote user info for userid $ruserid and username <strong>$luser->username</strong>.");
-                        } else if (isset($returneduserupdate['1'])) {
-                            $errors[] = $returneduserupdate['1'];
-                        }
-                    }
-                } else {
-                    mtrace("<br>User <strong>$luser->username</strong> not found on remote system, create them.");
-
-                    // Set the user creation page params.
-                    $cpageparams = [
-                        'wstoken' => $user->usertoken,
-                        'wsfunction' => 'core_user_create_users',
-                        'moodlewsrestformat' => 'json',
-                        'users[0][username]' => $luser->username,
-                        'users[0][email]' => $luser->email,
-                        'users[0][auth]' => $luser->auth,
-                        'users[0][firstname]' => $luser->firstname,
-                        'users[0][lastname]' => $luser->lastname,
-                        'users[0][alternatename]' => $luser->alternatename,
-                        'users[0][email]' => $luser->email,
-                        'users[0][idnumber]' => $luser->idnumber,
-                    ];
-
-                    // Set the user update defaults.
-                    $cdefaults = array(
-                        CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
-                        CURLOPT_HEADER => 0,
-                        CURLOPT_RETURNTRANSFER => TRUE,
-                        CURLOPT_TIMEOUT => 4,
-                        CURLOPT_POST => false,
-                        CURLOPT_POSTFIELDS => $cpageparams,
-                    );
-
-                    // Create the curl handler.
-                    $chc = curl_init();
-
-                    // Set the curl options.
-                    curl_setopt_array($chc, $cdefaults);
-
-                    // Run the curl handler and store the returned data.
-                    unset($returncdata);
-                    $returncdata = curl_exec($chc);
-
-                    // Close the curl handler.
-                    curl_close($chc);
-
-                    $returnedusercreate = json_decode($returncdata, true);
-
-
-                    if ($returnedusercreate[0]['id']) {
-                        mtrace("<br>Created the missing remote user matching username: <strong>$luser->username</strong>.");
-                    } else if (isset($returnedusercreate[1])) {
-                        $errors[] = $returnedusercreate[1];
-                    }
-                }
-
-           //    $remoteusers[] = isset($returnedusers['users'][0]) ? $returnedusers['users'][0] : null;
+    public static function xe_remote_user_match($user, $returneduser) {
+        // Sanity check to short-circuit things.
+        if (!isset($returneduser['id'])) {
+            return false;
         }
-if (isset($errors)) {
-    echo"<pre>Errors: ";
-    var_dump($errors);
-    echo"</pre>";
-}
-  //      return $remoteusers;
+
+        // Set up the remote user object.
+        $ruser                = new stdClass();
+        $ruser->username      = $returneduser['username'];
+        $ruser->email         = $returneduser['email'];
+        $ruser->idnumber      = $returneduser['idnumber'];
+        $ruser->firstname     = $returneduser['firstname'];
+        $ruser->lastname      = $returneduser['lastname'];
+        $ruser->alternatename = isset($returneduser['alternatename'])
+                                ? $returneduser['alternatename']
+                                : null;
+        $ruser->auth          = $returneduser['auth'];
+
+        // Set up the local user object.
+        $luser                = new stdClass();
+        $luser->username      = $user->username;
+        $luser->email         = $user->email;
+        $luser->idnumber      = $user->idnumber;
+        $luser->firstname     = $user->firstname;
+        $luser->lastname      = $user->lastname;
+        $luser->alternatename = $user->alternatename;
+        $luser->auth          = $user->auth;
+
+        if ($luser == $ruser) {
+            mtrace("The local ($luser->username) and remote user ($ruser->username) objects match entirely. Skipping.");
+            return true;
+        } else {
+            mtrace("Something in the user object does not match.");
+            return false;
+        }
+    }
+
+    public static function xe_remote_user_update($user, $returneduser) {
+        // Sanity check to short-circuit things.
+        if (!isset($returneduser['id'])) {
+            return false;
+        }
+        
+        mtrace("<br>We are atttempting to update the remote user "
+            . $returneduser['username']
+            . " to match the local user $user->username.");
+
+        // Set the user update page params.
+        $pageparams = [
+            'wstoken' => $user->usertoken,
+            'wsfunction' => 'core_user_update_users',
+            'moodlewsrestformat' => 'json',
+            'users[0][id]' => $returneduser['id'],
+            'users[0][username]' => $user->username,
+            'users[0][email]' => $user->email,
+            'users[0][auth]' => $user->auth,
+            'users[0][firstname]' => $user->firstname,
+            'users[0][lastname]' => $user->lastname,
+            'users[0][alternatename]' => $user->alternatename,
+            'users[0][email]' => $user->email,
+            'users[0][idnumber]' => $user->idnumber,
+        ];
+
+        // Set the user update defaults.
+        $defaults = array(
+            CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+            CURLOPT_HEADER => 0,
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_POST => false,
+            CURLOPT_POSTFIELDS => $pageparams,
+        );
+
+        // Create the curl handler.
+        $ch = curl_init();
+
+        // Set the curl options.
+        curl_setopt_array($ch, $defaults);
+
+        // Run the curl handler and store the returned data.
+        unset($returnudata);
+        $returndata = curl_exec($ch);
+
+        // Close the curl handler.
+        curl_close($ch);
+
+        $returneduserupdate = json_decode($returndata, true);
+
+        $returneduserupdate = isset($returneduserupdate) ? false : true;
+        if ($returneduserupdate) {
+            mtrace("<br>We are have updated the remote user "
+                . $returneduser['username']
+                . " details to match the local user $user->username.");
+        } else {
+            mtrace("<br>We are unable to update the remote user "
+                . $returneduser['username']
+                . " details to match the local user $user->username.");
+        }
+        return $returneduserupdate;
+    }
+
+    /**
+     * If the destination user does not exist, create them.
+     *
+     * @return @bool
+     */
+    public static function xe_remote_user_create($user) {
+        mtrace("User <strong>$user->username</strong> not found on remote system, create them.");
+
+        // Set the user creation page params.
+        $pageparams = [
+            'wstoken' => $user->usertoken,
+            'wsfunction' => 'core_user_create_users',
+            'moodlewsrestformat' => 'json',
+            'users[0][username]' => $user->username,
+            'users[0][email]' => $user->email,
+            'users[0][auth]' => $user->auth,
+            'users[0][firstname]' => $user->firstname,
+            'users[0][lastname]' => $user->lastname,
+            'users[0][alternatename]' => $user->alternatename,
+            'users[0][email]' => $user->email,
+            'users[0][idnumber]' => $user->idnumber,
+        ];
+
+        // Set the user update defaults.
+        $defaults = array(
+            CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+            CURLOPT_HEADER => 0,
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_POST => false,
+            CURLOPT_POSTFIELDS => $pageparams,
+        );
+
+        // Create the curl handler.
+        $ch = curl_init();
+
+        // Set the curl options.
+        curl_setopt_array($ch, $defaults);
+
+        // Run the curl handler and store the returned data.
+        unset($returndata);
+        $returndata = curl_exec($ch);
+
+        // Close the curl handler.
+        curl_close($ch);
+
+        $returnedusercreate = json_decode($returndata, true);
+        $returnedusercreate = $returnedusercreate[0];
+
+        if ($returnedusercreate['id']) {
+            mtrace("<br>Created the missing remote user matching username:
+                    <strong>$user->username</strong> with id "
+                    . $returnedusercreate['id'] . ".");
+            return $returnedusercreate;
+        } else {
+            mtrace("<br>ERROR creating the missing remote user
+                   - username: <strong>$user->username</strong>.");
+            return false;
+        }
+    }
+
+    public static function xe_enroll_user($user, $remoteuserid) {
+        global $CFG, $DB;
+
+        // TODO: Figure out a better way to handle this crap.
+        $roleid = $user->role == 'student' ? $user->studentrole : $user->teacherrole;
+
+        // Set the enrollment page params.
+        $pageparams = [
+            'wstoken' => $user->usertoken,
+            'wsfunction' => 'enrol_manual_enrol_users',
+            'moodlewsrestformat' => 'json',
+            'enrolments[0][roleid]' => $roleid,
+            'enrolments[0][userid]' => $remoteuserid,
+            'enrolments[0][courseid]' => $user->destcourseid,
+        ];
+
+        // Set the user update defaults.
+        $defaults = array(
+            CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+            CURLOPT_HEADER => 0,
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_POST => false,
+            CURLOPT_POSTFIELDS => $pageparams,
+        );
+
+        // Create the curl handler.
+        $ch = curl_init();
+
+        // Set the curl options.
+        curl_setopt_array($ch, $defaults);
+
+        // Run the curl handler and store the returned data.
+        unset($returndata);
+        $returndata = curl_exec($ch);
+
+        // Close the curl handler.
+        curl_close($ch);
+
+        $returneduserenrol = json_decode($returndata, true);
+
+        if (isset($returneduserenrol)) {
+            mtrace("<br>" .
+                   $returneduserenrol['exception']
+                   . " - " .
+                   $returneduserenrol['errorcode']
+                   . " - " .
+                   $returneduserenrol['message']);
+        } else {
+            mtrace("<br>Enrolled $user->username with remote userid
+                    $remoteuserid as $user->role in
+                    the remote courseid $user->destcourseid
+                    on https://$user->destmoodle.");
+        }
+    }
+
+    public static function xe_unenroll_user($user, $remoteuserid) {
+        global $CFG, $DB;
+
+        // TODO: Figure out a better way to handle this crap.
+        $roleid = $user->role == 'student' ? $user->studentrole : $user->teacherrole;
+
+        // Set the enrollment page params.
+        $pageparams = [
+            'wstoken' => $user->usertoken,
+            'wsfunction' => 'enrol_manual_unenrol_users',
+            'moodlewsrestformat' => 'json',
+            'enrolments[0][roleid]' => $roleid,
+            'enrolments[0][userid]' => $remoteuserid,
+            'enrolments[0][courseid]' => $user->destcourseid,
+        ];
+
+        // Set the user update defaults.
+        $defaults = array(
+            CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
+            CURLOPT_HEADER => 0,
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_TIMEOUT => 4,
+            CURLOPT_POST => false,
+            CURLOPT_POSTFIELDS => $pageparams,
+        );
+
+        // Create the curl handler.
+        $ch = curl_init();
+
+        // Set the curl options.
+        curl_setopt_array($ch, $defaults);
+
+        // Run the curl handler and store the returned data.
+        unset($returndata);
+        $returndata = curl_exec($ch);
+
+        // Close the curl handler.
+        curl_close($ch);
+
+        $returneduserenrol = json_decode($returndata, true);
+
+        if (isset($returneduserenrol)) {
+            mtrace("<br>" .
+                   $returneduserenrol['exception']
+                   . " - " .
+                   $returneduserenrol['errorcode']
+                   . " - " .
+                   $returneduserenrol['message']);
+        } else {
+            mtrace("<br>Unenrolled $user->username with remote userid
+                    $remoteuserid from $user->role role from
+                    the remote courseid $user->destcourseid
+                    on https://$user->destmoodle.");
+        }
     }
 }
