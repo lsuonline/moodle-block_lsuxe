@@ -67,4 +67,4 @@ $userelapsedtime = round(microtime(true) - $userstarttime, 3);
 mtrace("\nUser $count took " . $userelapsedtime . " seconds to process.");
 }
 $elapsedtime = round(microtime(true) - $starttime, 3);
-mtrace("\n\nThis entire process took " . $userelapsedtime . " seconds.");
+mtrace("\n\nThis entire process took " . $elapsedtime . " seconds.");
