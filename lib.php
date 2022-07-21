@@ -745,8 +745,8 @@ class lsuxe_helpers {
      * @return @bool
      */
     public static function xe_enroll_user($user, $remoteuserid) {
-        // TODO: Figure out a better way to handle this crap.
-        $roleid = $user->role == 'student' ? $user->studentrole : $user->teacherrole;
+        $role = isset($CFG->xestudentrolename) ? $CFG->xestudentrolename : 'student';
+        $roleid = $user->role == $role ? $user->studentrole : $user->teacherrole;
 
         // Set the enrollment page params.
         $pageparams = [
@@ -812,7 +812,7 @@ class lsuxe_helpers {
      * @return @bool
      */
     public static function xe_unenroll_user($user, $remoteuserid) {
-        // TODO: Figure out a better way to handle this crap.
+        $role = isset($CFG->xestudentrolename) ? $CFG->xestudentrolename : 'student';
         $roleid = $user->role == 'student' ? $user->studentrole : $user->teacherrole;
 
         // Set the enrollment page params.
