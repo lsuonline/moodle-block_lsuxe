@@ -29,9 +29,9 @@ require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
 $starttime = microtime(true);
 
 if (lsuxe_helpers::is_ues()) {
-   echo("Using UES");
+   echo("Using UES\n");
 } else {
-   echo("Normal Enrollment");
+   echo("Normal Enrollment\n");
 }
 
 lsuxe_helpers::xe_write_destcourse();
@@ -41,9 +41,11 @@ $groups = lsuxe_helpers::xe_get_groups();
 lsuxe_helpers::xe_write_destgroups($groups);
 
 $users = lsuxe_helpers::xe_current_enrollments();
+
 $count = 0;
 foreach ($users as $user) {
 $count++;
+
 $userstarttime = microtime(true);
     $remoteuser = lsuxe_helpers::xe_remote_user_lookup($user);
     if (isset($remoteuser['id'])) {
@@ -63,8 +65,9 @@ $userstarttime = microtime(true);
         $enrolluser = lsuxe_helpers::xe_unenroll_user($user, $remoteuser['id']);
     }
 
-$userelapsedtime = round(microtime(true) - $userstarttime, 3);
-mtrace("\nUser $count took " . $userelapsedtime . " seconds to process.");
+    $userelapsedtime = round(microtime(true) - $userstarttime, 3);
+    mtrace("\nUser $count took " . $userelapsedtime . " seconds to process.");
 }
+
 $elapsedtime = round(microtime(true) - $starttime, 3);
 mtrace("\n\nThis entire process took " . $elapsedtime . " seconds.");
