@@ -29,11 +29,11 @@ defined('MOODLE_INTERNAL') || die();
 class lsuxe {
 
     /**
-     * Master function for importing GUILD mapping data.
+     * Master function for FULL lsuxe enrollment and processing.
      *
      * @return boolean
      */
-    public function run_lsuxe_enroll() {
+    public function run_lsuxe_full_enroll() {
 
         $starttime = microtime(true);
 
@@ -82,4 +82,129 @@ class lsuxe {
         $elapsedtime = round(microtime(true) - $starttime, 3);
         mtrace("\n\nThis entire process took " . $elapsedtime . " seconds.");
     }
+
+
+    /**
+     * Master function for grabbing remote course data and populating it locally.
+     *
+     * @return boolean
+     */
+    public function run_lsuxe_courses() {
+        $starttime = microtime(true);
+
+        if (lsuxe_helpers::is_ues()) {
+            mtrace("Using LSU UES");
+        } else {
+            mtrace("Normal Moodle Enrollment");
+        }
+
+        lsuxe_helpers::xe_write_destcourse();
+
+        $elapsedtime = round(microtime(true) - $starttime, 3);
+        mtrace("\n\nThis entire process took " . $elapsedtime . " seconds.");
+
+        return true;
+    }
+
+    /**
+     * Master function for remote userid lookup, remote creation, and local storage.
+     *
+     * @return boolean
+     */
+    public function run_lsuxe_users() {
+        $starttime = microtime(true);
+
+        if (lsuxe_helpers::is_ues()) {
+            mtrace("Using LSU UES");
+        } else {
+            mtrace("Normal Moodle Enrollment");
+        }
+
+        $users = lsuxe_helpers::xe_current_enrollments();
+
+        $count = 0;
+        foreach ($users as $user) {
+            $count++;
+
+            $userstarttime = microtime(true);
+            $remoteuser = lsuxe_helpers::xe_remote_user_lookup($user);
+            if (isset($remoteuser['id'])) {
+                $usermatch = lsuxe_helpers::xe_remote_user_match($user, $remoteuser);
+                if (!$usermatch) {
+                    $updateuser = lsuxe_helpers::xe_remote_user_update($user, $remoteuser);
+                }
+            } else {
+                $createduser = lsuxe_helpers::xe_remote_user_create($user);
+                $remoteuser = $createduser;
+            }
+
+            $userelapsedtime = round(microtime(true) - $userstarttime, 3);
+            mtrace("User #$count ($user->username) took " . $userelapsedtime . " seconds to process.\n");
+        }
+
+        $elapsedtime = round(microtime(true) - $starttime, 3);
+        mtrace("\n\nThis entire process took " . $elapsedtime . " seconds.");
+    }
+
+
+    /**
+     * Master function for remote group lookup and local storage.
+     *
+     * @return boolean
+     */
+    public function run_lsuxe_groups() {
+        $starttime = microtime(true);
+
+        if (lsuxe_helpers::is_ues()) {
+            mtrace("Using LSU UES");
+        } else {
+            mtrace("Normal Moodle Enrollment");
+        }
+
+        $groups = lsuxe_helpers::xe_get_groups();
+
+        lsuxe_helpers::xe_write_destgroups($groups);
+
+        $elapsedtime = round(microtime(true) - $starttime, 3);
+        mtrace("\n\nThis entire process took " . $elapsedtime . " seconds.");
+    }
+
+    /**
+     * Master function for lsuxe enrollment and processing.
+     *
+     * @return boolean
+     */
+    public function run_lsuxe_enroll() {
+
+        $starttime = microtime(true);
+
+        if (lsuxe_helpers::is_ues()) {
+            mtrace("Using LSU UES");
+        } else {
+            mtrace("Normal Moodle Enrollment");
+        }
+
+        $users = lsuxe_helpers::xe_current_enrollments();
+
+        $count = 0;
+        foreach ($users as $user) {
+            $count++;
+
+            $userstarttime = microtime(true);
+
+            if ($user->status == 'enrolled') {
+                $enrolluser = lsuxe_helpers::xe_enroll_user($user, $remoteuser['id']);
+                $enrolgroup = lsuxe_helpers::xe_add_user_to_group($user, $remoteuser['id']);
+            } else {
+                $enrolluser = lsuxe_helpers::xe_unenroll_user($user, $remoteuser['id']);
+            }
+
+            $userelapsedtime = round(microtime(true) - $userstarttime, 3);
+            mtrace("User #$count ($user->username) took " . $userelapsedtime . " seconds to process.\n");
+        }
+
+        $elapsedtime = round(microtime(true) - $starttime, 3);
+        mtrace("\n\nThis entire process took " . $elapsedtime . " seconds.");
+    }
+
 }

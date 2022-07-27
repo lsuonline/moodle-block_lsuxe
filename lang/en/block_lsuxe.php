@@ -29,7 +29,11 @@ $string['adminname'] = 'Manage Cross Enrollments';
 $string['settings'] = 'Settings';
 
 // Tasks.
-$string['lsuxe_enroll'] = 'LSU Cross Enrollment';
+$string['lsuxe_courses'] = 'Fetch Remote Courseids';
+$string['lsuxe_groups'] = 'Fetch Remote Groupids';
+$string['lsuxe_users'] = 'Verify and Create Remote Users';
+$string['lsuxe_enroll'] = 'Basic LSU Cross Enrollment';
+$string['lsuxe_full_enroll'] = 'FULL LSU Cross Enrollment';
 
 // Capabilities.
 $string['xe:admin'] = 'Administer the Cross Enrollment system.';
