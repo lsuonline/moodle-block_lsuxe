@@ -49,6 +49,8 @@ class lsuxe_helpers {
     public static function xe_current_enrollments() {
         global $DB, $CFG;
 
+//TODO: Update interval tracking and processing.
+
         // LSU UES Specific enrollemnt / unenrollment data.
         $lsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
                 u.id AS "userid",
