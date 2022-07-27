@@ -192,11 +192,19 @@ class lsuxe {
 
             $userstarttime = microtime(true);
 
-            if ($user->status == 'enrolled') {
-                $enrolluser = lsuxe_helpers::xe_enroll_user($user, $remoteuser['id']);
-                $enrolgroup = lsuxe_helpers::xe_add_user_to_group($user, $remoteuser['id']);
+            $userstarttime = microtime(true);
+
+            $remoteuser = lsuxe_helpers::xe_remote_user_lookup($user);
+
+            if (isset($remoteuser['id'])) {
+                if ($user->status == 'enrolled') {
+                    $enrolluser = lsuxe_helpers::xe_enroll_user($user, $remoteuser['id']);
+                    $enrolgroup = lsuxe_helpers::xe_add_user_to_group($user, $remoteuser['id']);
+                } else {
+                    $enrolluser = lsuxe_helpers::xe_unenroll_user($user, $remoteuser['id']);
+                }
             } else {
-                $enrolluser = lsuxe_helpers::xe_unenroll_user($user, $remoteuser['id']);
+                mtrace("ERROR: $user->username does not exist on the remote server.");
             }
 
             $userelapsedtime = round(microtime(true) - $userstarttime, 3);
