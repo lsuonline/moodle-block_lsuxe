@@ -29,6 +29,7 @@ $string['adminname'] = 'Manage Cross Enrollments';
 $string['settings'] = 'Settings';
 
 // Tasks.
+$string['lsuxe_enroll'] = 'LSU Cross Enrollment';
 
 // Capabilities.
 $string['xe:admin'] = 'Administer the Cross Enrollment system.';

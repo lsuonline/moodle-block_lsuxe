@@ -15,16 +15,24 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Setting up the scheduled task.
+ *
  * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @copyright  2022 onwards LSUOnline & Continuing Education
+ * @copyright  2022 onwards Robert Russo
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'block_lsuxe';
-$plugin->version   = 2022072700;        // The current plugin version (Date: YYYYMMDDXX)
-$plugin->requires  = 2016112900;        // Requires this Moodle version
-$plugin->release = "v1.1";
-$plugin->maturity = MATURITY_STABLE;
+// Define the task defaults.
+$tasks = array(
+    array(
+        'classname' => 'block_lsuxe\task\lsuxe_enroll',
+        'blocking' => 0,
+        'minute' => '30',
+        'hour' => '3',
+        'day' => '*',
+        'dayofweek' => '*',
+        'month' => '*'
+    )
+);

@@ -97,6 +97,8 @@ class lsuxe_helpers {
                 AND xemm.destgroupid IS NOT NULL
                 AND UNIX_TIMESTAMP() > xemm.starttime
                 AND UNIX_TIMESTAMP() < xemm.endtime
+                AND xem.timedeleted IS NULL
+                AND xemm.timedeleted IS NULL
 
             UNION
 
@@ -146,7 +148,9 @@ class lsuxe_helpers {
                 AND xemm.destcourseid IS NOT NULL
                 AND xemm.destgroupid IS NOT NULL
                 AND UNIX_TIMESTAMP() > xemm.starttime
-                AND UNIX_TIMESTAMP() < xemm.endtime';
+                AND UNIX_TIMESTAMP() < xemm.endtime
+                AND xem.timedeleted IS NULL
+                AND xemm.timedeleted IS NULL';
 
         // Generic Moodle enrollment / suspension data.
         $gsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
@@ -192,7 +196,9 @@ class lsuxe_helpers {
             WHERE xemm.destcourseid IS NOT NULL
                 AND xemm.destgroupid IS NOT NULL
                 AND UNIX_TIMESTAMP() > xemm.starttime
-                AND UNIX_TIMESTAMP() < xemm.endtime';
+                AND UNIX_TIMESTAMP() < xemm.endtime
+                AND xem.timedeleted IS NULL
+                AND xemm.timedeleted IS NULL';
 
         // Check to see if we're forcing Moodle enrollment.
         $ues = isset($CFG->xeforceenroll) == 0 ? true : false;
@@ -292,7 +298,7 @@ class lsuxe_helpers {
                 CURLOPT_POSTFIELDS => $pageparams,
             );
 
-            mtrace("<br>Checking for a remote courseid for <strong>$course->destshortname</strong>.");
+            mtrace("Checking for a remote courseid for <strong>$course->destshortname</strong>.");
             // Instantiate the curl handler.
             $ch = curl_init();
 
@@ -318,7 +324,7 @@ class lsuxe_helpers {
 
             // If we have a destination course id, update the DB.
             if (isset($destcourseid)) {
-                mtrace("<br>We found the destination courseid ($destcourseid) for <strong>$course->destshortname</strong>.");
+                mtrace("We found the destination courseid ($destcourseid) for <strong>$course->destshortname</strong>.");
                 // Set the required data object.
                 $dataobject = [
                     'id' => $course->xemmid,
@@ -327,7 +333,7 @@ class lsuxe_helpers {
 
                 // Write the data.
                 if ($DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false)) {
-                    mtrace("<br>We have written the destination courseid ($destcourseid) for <strong>$course->destshortname</strong> to the local DB.");
+                    mtrace("We have written the destination courseid ($destcourseid) for <strong>$course->destshortname</strong> to the local DB.");
                 } else {
                     $errors[] = array("DB Write Error" => "The destination course id: $destcourseid could not be written to the local DB.");
                 }
@@ -414,11 +420,11 @@ class lsuxe_helpers {
             // If we have a match, store the destination group id and exit the loop.
             if ($destgroupnamexp == $destgroupname) {
                 $destgroupid = $returnedgroup['id'];
-                mtrace("<br>We found a destination <strong>$destgroupname</strong> group that matches the local group <strong>$destgroupnamexp</strong>.");
+                mtrace("We found a destination <strong>$destgroupname</strong> group that matches the local group <strong>$destgroupnamexp</strong>.");
                 break;
             } else {
                 $destgroupid = null;
-                mtrace("<br>We did not find a remote group matching: <strong>$destgroupnamexp</strong>.");
+                mtrace("We did not find a remote group matching: <strong>$destgroupnamexp</strong>.");
             }
         }
         return $destgroupid;
@@ -443,7 +449,7 @@ class lsuxe_helpers {
             // Write it locally.
             $destgroupnamexp = $group->destgroupprefix . " " . $group->groupname;
             $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
-            mtrace("<br>We have written a destination groupid ($destgroupid) record for <strong>$destgroupnamexp</strong> to the local DB.");
+            mtrace("We have written a destination groupid ($destgroupid) record for <strong>$destgroupnamexp</strong> to the local DB.");
         } else {
             // Create the remote group.
             $destgroupid = self::xe_create_remote_group($group);
@@ -505,7 +511,7 @@ class lsuxe_helpers {
 
         // Another sanity check to make sure it's set before we write it.
         if (isset($destgroupid)) {
-            mtrace("<br>We have created a remote group <strong>$group->destgroupprefix $group->groupname</strong> with id ($destgroupid).");
+            mtrace("We have created a remote group <strong>$group->destgroupprefix $group->groupname</strong> with id ($destgroupid).");
             // Set the data object for writing to our DB.
             self::xe_write_destgroup($group);
         }
@@ -596,10 +602,10 @@ class lsuxe_helpers {
         $luser->auth          = $user->auth;
 
         if ($luser == $ruser) {
-            mtrace("<br>The local ($luser->username) and remote user ($ruser->username) objects match entirely. Skipping.");
+            mtrace("The local ($luser->username) and remote user ($ruser->username) objects match entirely. Skipping.");
             return true;
         } else {
-            mtrace("<br>Something in the user object does not match.");
+            mtrace("Something in the user object does not match.");
             return false;
         }
     }
@@ -617,7 +623,7 @@ class lsuxe_helpers {
             return false;
         }
 
-        mtrace("<br>We are atttempting to update the remote user "
+        mtrace("We are atttempting to update the remote user "
             . $returneduser['username']
             . " to match the local user $user->username.");
 
@@ -664,11 +670,11 @@ class lsuxe_helpers {
 
         $returneduserupdate = isset($returneduserupdate) ? false : true;
         if ($returneduserupdate) {
-            mtrace("<br>We are have updated the remote user "
+            mtrace("We are have updated the remote user "
                 . $returneduser['username']
                 . " details to match the local user $user->username.");
         } else {
-            mtrace("<br>We are unable to update the remote user "
+            mtrace("ERROR: We are unable to update the remote user "
                 . $returneduser['username']
                 . " details to match the local user $user->username.");
         }
@@ -682,7 +688,7 @@ class lsuxe_helpers {
      * @return @bool
      */
     public static function xe_remote_user_create($user) {
-        mtrace("<br>User <strong>$user->username</strong> not found on remote system, create them.");
+        mtrace("User <strong>$user->username</strong> not found on remote system, create them.");
 
         // Set the user creation page params.
         $pageparams = [
@@ -726,13 +732,13 @@ class lsuxe_helpers {
         $returnedusercreate = $returnedusercreate[0];
 
         if ($returnedusercreate['id']) {
-            mtrace("<br>Created the missing remote user matching username:
-                    <strong>$user->username</strong> with id "
+            mtrace("Created the missing remote user matching username: "
+                    . "<strong>$user->username</strong> with id "
                     . $returnedusercreate['id'] . ".");
             return $returnedusercreate;
         } else {
-            mtrace("<br>ERROR creating the missing remote user
-                   - username: <strong>$user->username</strong>.");
+            mtrace("ERROR creating the missing remote user - "
+                   . "username: <strong>$user->username</strong>.");
             return false;
         }
     }
@@ -786,18 +792,17 @@ class lsuxe_helpers {
 
         // If there's data, there's an error.
         if (isset($returneduserenrol)) {
-            mtrace("<br>" .
-                   $returneduserenrol['exception']
+            mtrace($returneduserenrol['exception']
                    . " - " .
                    $returneduserenrol['errorcode']
                    . " - " .
                    $returneduserenrol['message']);
         } else {
             // Success.
-            mtrace("<br>Enrolled $user->username with remote userid
-                    $remoteuserid as $user->role in
-                    the remote courseid $user->destcourseid
-                    on https://$user->destmoodle.");
+            mtrace("Enrolled " . $user->username . " with remote userid"
+                    . " $remoteuserid as $user->role in"
+                    . " the remote courseid " . $user->destcourseid 
+                    . " on https://" . $user->destmoodle . ".");
         }
 
         $returndata = isset($returneduserenrol) ? false : true;
@@ -851,17 +856,16 @@ class lsuxe_helpers {
         $returneduserunenrol = json_decode($returndata, true);
 
         if (isset($returneduserunenrol)) {
-            mtrace("<br>" .
-                   $returneduserunenrol['exception']
+            mtrace($returneduserunenrol['exception']
                    . " - " .
                    $returneduserunenrol['errorcode']
                    . " - " .
                    $returneduserunenrol['message']);
         } else {
-            mtrace("<br>Unenrolled $user->username with remote userid
-                    $remoteuserid from $user->role role from
-                    the remote courseid $user->destcourseid
-                    on https://$user->destmoodle.");
+            mtrace("Unenrolled $user->username with remote userid "
+                    . "$remoteuserid from $user->role role from "
+                    . " the remote courseid $user->destcourseid "
+                    . " on https://$user->destmoodle.");
         }
 
         $returndata = isset($returneduserunenrol) ? false : true;
@@ -911,17 +915,16 @@ class lsuxe_helpers {
         $returnedgroupenrol = json_decode($returndata, true);
 
         if (isset($returnedgroupenrol)) {
-            mtrace("<br>" .
-                   $returnedgroupenrol['exception']
+            mtrace($returnedgroupenrol['exception']
                    . " - " .
                    $returnedgroupenrol['errorcode']
                    . " - " .
                    $returnedgroupenrol['message']);
         } else {
-            mtrace("<br>Added $user->username with remote userid
-                    $remoteuserid to remote group id $user->destgroupid
-                    in the remote courseid $user->destcourseid
-                    on https://$user->destmoodle.");
+            mtrace("Added $user->username with remote userid"
+                    . " $remoteuserid to remote group id $user->destgroupid"
+                    . " in the remote courseid $user->destcourseid"
+                    . " on https://$user->destmoodle.");
         }
 
         $returndata = isset($returnedgroupenrol) ? false : true;
