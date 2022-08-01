@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,17 +22,21 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-class block_lsuxe_edit_form extends block_edit_form {
+ define(['jquery', 'block_lsuxe/xe_lib', 'block_lsuxe/form_events'],
+    function($, XELib, XEEvents) {
+    'use strict';
 
-    protected function specific_definition($mform) {
+    return {
 
-        // Section header title according to language file.
-        // $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
+        /**
+         * This is the starting function for the TCS
+         * @param {object} extras is data coming from PHP
+         */
 
-        // A sample string variable with a default value.
-        // $mform->addElement('text', 'config_text', get_string('blockstring', 'block_lsuxe'));
-        // $mform->setDefault('config_text', 'default value');
-        // $mform->setType('config_text', PARAM_TEXT);        
-
-    }
-}
+        init: function() {
+            // console.log("Did we get data from PHP: ", data);
+            XELib.preLoadConfig();
+            XEEvents.registerEvents();
+        }
+    };
+});

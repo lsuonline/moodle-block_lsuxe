@@ -23,17 +23,33 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-class block_lsuxe_edit_form extends block_edit_form {
+namespace block_lsuxe\models;
 
-    protected function specific_definition($mform) {
+/**
+ * Mixed functions to retrieve info from the DB.
+ */
+class mixed {
 
-        // Section header title according to language file.
-        // $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
+    // public function __construct() {
+    // }
 
-        // A sample string variable with a default value.
-        // $mform->addElement('text', 'config_text', get_string('blockstring', 'block_lsuxe'));
-        // $mform->setDefault('config_text', 'default value');
-        // $mform->setType('config_text', PARAM_TEXT);        
-
+    /**
+     * Retrieve basic info about the course and it's group information.
+     * @param  object containing the course id and name
+     * @return array
+     */
+    public function getCourseGroup($params) {
+        global $DB;
+        
+        $courseid = isset($params->courseid) ? $params->courseid : null;
+        $coursename = isset($params->coursename) ? $params->coursename : null;
+        
+        $coursedata = $DB->get_record_sql(
+            'SELECT c.id, c.idnumber, c.shortname, g.id as groupid, g.name as groupname
+            FROM mdl_course c, mdl_groups g
+            WHERE c.id = g.courseid AND c.id = ?',
+            array($courseid)
+        );
+        return $coursedata;
     }
 }

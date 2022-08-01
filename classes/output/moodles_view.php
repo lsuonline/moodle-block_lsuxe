@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -27,6 +29,8 @@ use renderable;
 use renderer_base;
 use templatable;
 use stdClass;
+use block_lsuxe\persistents\moodles;
+require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
 
 class moodles_view implements renderable, templatable {
     /** @var string $sometext Some text to show how to pass data to a template. */
@@ -40,9 +44,11 @@ class moodles_view implements renderable, templatable {
      *
      * @return stdClass
      */
-    public function export_for_template(renderer_base $output): stdClass {
-        $data = new stdClass();
-        // $data->sometext = $this->sometext;
-        return $data;
+    public function export_for_template(renderer_base $output): array {
+        $pname = new moodles();
+        $helpers = new \lsuxe_helpers();
+
+        $data = $pname->get_all_records("moodles");
+        return $pname->transform_for_view($data, $helpers);
     }
 }

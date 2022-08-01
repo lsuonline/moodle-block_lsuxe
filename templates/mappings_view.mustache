@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -22,9 +24,8 @@
  */
 -->
 
-<div class="block_lsuxe_mappings_container">
-
-    <table class="table table-hover lsuxe_mappings_table">
+<div class="block_lsuxe_container">
+    <table class="table table-hover table-striped lsuxe_mappings_table">
         <thead>
             <tr>
                 {{#moodleURL}}
@@ -87,26 +88,34 @@
             </tr>
         </thead>
         <tbody>
-            {{# tableRows }}
-                <tr>
+            {{# mappings}}
+            <form method="POST" id="map_form_{{id}}">
+                <tr data-rowid='{{id}}'>
+                    <input type="hidden" value="{{id}}" name="sentdata"/>
+                    <input type="hidden" value="{{destmoodleid}}" name="destmoodleid"/>
                     <td>{{ moodleurl }}</td>
-                    <td>{{ srcshortname }}</td>
-                    <td>{{ srcgroup }}</td>
-                    <td>{{ destshortname }}</td>
-                    <td>{{ updateinterval }}</td>
-                    <td>{{ updatenow }}</td>
-                    <td>{{ edit }}</td>
-                    <td>{{ delete }}</td>
+                    <td>{{ shortname }}</td>
+                    <td>{{ groupname }}</td>
+                    <td>{{ destcourseshortname }}</td>
+                    <td>{{{ updateinterval }}}</td>
+                    <td><button type="submit" class="btn btn-success mview_update"><i class="fa fa-refresh"></i></button></td>
+                    <td><button type="submit" class="btn btn-warning mview_edit"><i class="fa fa-pencil"></i></button></td>
+                    <td><button type="submit" class="btn btn-danger mview_delete"><i class="fa fa-trash"></i></button></td>
                 </tr>
-            {{/ tableRows }}
+            </form>
+            {{/ mappings }}
 
-            {{^ tableRows }}
+            {{^ mappings }}
                 <tr>
                     <td colspan="7" align="center">{{# str }} nomappings, block_lsuxe {{/ str }}</td>
                 </tr>
-            {{/ tableRows }}
+            {{/ mappings }}
 
         </tbody>
     </table>
-
+    <span class="pull-right">
+        <a href="{{globals.config.wwwroot}}/blocks/lsuxe/mappings.php?vform=1" class="btn btn-info">Create New</a>
+    </span>
+    {{! This will load the JS for the views that have basic create, update, delete buttons }}
+    {{> block_lsuxe/buttons }}
 </div>

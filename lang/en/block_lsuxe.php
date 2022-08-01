@@ -16,6 +16,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -61,7 +63,6 @@ $string['tokens_view'] = 'Tokens - View';
 $string['tokens_create'] = 'Tokens - Create';
 $string['manage_tokens'] = 'Manage Web Service Tokens';
 
-
 $string['moodles'] = 'Moodles';
 $string['moodlesurl'] = 'Moodle URL';
 $string['moodles_view'] = 'Moodles - View';
@@ -69,13 +70,16 @@ $string['moodles_create'] = 'Moodles - Create';
 
 // Forms New Mappings.
 $string['newmapping'] = 'Create New Mapping';
-$string['newmmoodle'] = 'Create New Instance';
+$string['newmoodle'] = 'Create New Instance';
+$string['updatemapping'] = 'Update Mapping';
+$string['updatemoodle'] = 'Update Instance';
 $string['srccourseshortname'] = 'Source Course Shortname';
 $string['srccoursegroupname'] = 'Source Group Shortname';
 $string['destmoodleinstance'] = 'Destination Moodle Instance';
 $string['destcourseshortname'] = 'Destination Course Shortname';
 $string['destcoursegroupname'] = 'Destination Course Group Prefix';
 $string['courseupdateinterval'] = 'Course Update Interval';
+$string['defaultupdateinterval'] = 'Default Update Interval';
 $string['updateinterval'] = 'Update Interval';
 $string['updatenow'] = 'Update Now';
 $string['edit'] = 'Edit';
@@ -106,6 +110,12 @@ $string['verificationfail'] = 'Verification Failure!';
 $string['verificationfailsub'] = 'Make sure the url and token are correct. Please verify the remote Moodle instance token is correct and any restrictions are properly reflected above.';
 $string['verificationsuccess'] = 'Verification Success!';
 $string['verified'] = 'Verified';
+$string['creatednewmapping'] = 'The new mapping has been created';
+$string['creatednewmoodle'] = 'The new moodle instance has been created';
+$string['updatedmapping'] = 'The mapping has been updated';
+$string['updatedmoodle'] = 'The moodle instance has been updated';
+$string['deletemapping'] = 'The mapping has been removed';
+$string['deletemoodle'] = 'The moodle instance has been removed';
 
 // Validation.
 $string['srccourseshortnameverify'] = 'Please include a course shortname.';
@@ -113,55 +123,8 @@ $string['srccoursegroupnameverify'] = 'Please include a course group name.';
 $string['destcourseshortnameverify'] = 'Please include a destination course shortname.';
 $string['destcoursegroupnameverify'] = 'Please include a destination course group prefix.';
 $string['instanceurlverify'] = 'A Moodle URL is required.';
+$string['instancetokenverify'] = 'A Moodle token is required from the destination instance.';
 
 // Settings
-$string['xe_moodle_instances_main_title'] = 'Moodle Instances.';
-$string['xe_moodle_instances_list'] = 'List of Moodle Instances.';
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+$string['xe_interval_main_title'] = 'Update Interval Times.';
+$string['xe_interval_list'] = 'Comma seperated list of intervals to choose from.';

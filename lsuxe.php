@@ -15,6 +15,8 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
  * @copyright  2008 onwards David Lowe
@@ -44,35 +46,35 @@ $PAGE->set_heading($title);
 
 // Navbar Bread Crumbs
 $PAGE->navbar->add(get_string('xedashboard', 'block_lsuxe'), new moodle_url('lsuxe.php'));
-
+$PAGE->requires->css(new moodle_url('/blocks/lsuxe/style.css'));
 $output = $PAGE->get_renderer('block_lsuxe');
-echo $output->header();
 
+echo $output->header();
 echo $output->heading($sectiontitle);
 
 // Links.
 $dashboard_links = array(
     array(
         // The Mappinges View.
-        'url' => '/blocks/lsuxe/mappings.php?view=1',
+        'url' => '/blocks/lsuxe/mappings.php',
         'icon' => 'list',
         'lang' => get_string('mappings_view', 'block_lsuxe')
     ),
     array(
         // The Mappinges Form.
-        'url' => '/blocks/lsuxe/mappings.php',
+        'url' => '/blocks/lsuxe/mappings.php?vform=1',
         'icon' => 'plus-square-o',
         'lang' => get_string('mappings_create', 'block_lsuxe')
     ),
     array(
         // The Moodles View.
-        'url' => '/blocks/lsuxe/moodles.php?view=1',
+        'url' => '/blocks/lsuxe/moodles.php',
         'icon' => 'list',
         'lang' => get_string('moodles_view', 'block_lsuxe')
     ),
     array(
         // The Mappinges Form.
-        'url' => '/blocks/lsuxe/moodles.php',
+        'url' => '/blocks/lsuxe/moodles.php?vform=1',
         'icon' => 'plus-square-o',
         'lang' => get_string('moodles_create', 'block_lsuxe')
     ),

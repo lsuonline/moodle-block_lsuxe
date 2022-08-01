@@ -1,6 +1,5 @@
 <?php
-// This file is part of Moodle - http://moodle.org/
-//
+
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -23,17 +22,27 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-class block_lsuxe_edit_form extends block_edit_form {
+// We defined the web service functions to install.
+$functions = array(
+    'block_lsuxe_XEAjax' => array(
+        'classname'   => 'block_lsuxe_external',
+        'methodname'  => 'XEAjax',
+        'classpath'   => 'blocks/lsuxe/externallib.php',
+        'description' => 'Entry point for Cross Enrollment Rest Services',
+        'type'        => 'write',
+        'ajax'        => true
+    ),
+);
 
-    protected function specific_definition($mform) {
-
-        // Section header title according to language file.
-        // $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
-
-        // A sample string variable with a default value.
-        // $mform->addElement('text', 'config_text', get_string('blockstring', 'block_lsuxe'));
-        // $mform->setDefault('config_text', 'default value');
-        // $mform->setType('config_text', PARAM_TEXT);        
-
-    }
-}
+// We define the services to install as pre-build services. A pre-build service is not editable by administrator.
+$services = array(
+    'LSUXE Service' => array(
+        'functions' => array (
+            'block_lsuxe_XEAjax'
+        ),
+        'restrictedusers' => 0,
+        'enabled'=>1,
+    )
+);
+// Sample Request URL: 
+// [$CFG->wwwroot, whatever your url is]/lib/ajax/service.php?sesskey=[sesskey]&info=block_lsuxe_XEAjax

@@ -15,16 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
+ * Cross Enrollment Tool
+ *
  * @package    block_lsuxe
  * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe, Robert Russo
+ * @copyright  2008 onwards David Lowe
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
 defined('MOODLE_INTERNAL') || die();
-class lsuxe_helpers {
 
+class lsuxe_helpers {
 
     // Redirects.
     /**
@@ -37,8 +38,36 @@ class lsuxe_helpers {
      */
     public function redirect_to_url($url, $urlparams = [], $delay = 2) {
         $moodleurl = new \moodle_url($url, $urlparams);
-
         redirect($moodleurl, '', $delay);
+    }
+    /**
+     * Config Converter - config settings that have multiple lines with
+     * a key value settings will be broken down and converted into an
+     * associative array, for example:
+     * Monthly 720,
+     * Weekly 168
+     * .....etc
+     * Becomes (Monthly => 720, Weekly => 168)
+     * @param  string  $config setting
+     * @return array
+     */
+    public function config_to_array($config_string) {
+        $config_name = get_config('moodle', $config_string);
+
+        // Strip the line breaks
+        $break_stripped = preg_replace("/\r|\n/", " ", $config_name);
+
+        // make sure there are not double spaces.
+        $break_stripped = str_replace("  ", " ", $break_stripped);
+
+        // now convert to arry and transform to an assoc. array
+        $exploded = explode(" ", $break_stripped);
+        $exploded_count = count($exploded);
+        $final = array();
+        for ($i = 0; $i < $exploded_count; $i+=2) {
+            $final[$exploded[$i+1]] = $exploded[$i];
+        }
+        return $final;
     }
 
     /**
