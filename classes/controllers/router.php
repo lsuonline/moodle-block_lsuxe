@@ -23,6 +23,8 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+use block_lsuxe\models;
+
 class router {
 
     /**
@@ -41,19 +43,41 @@ class router {
     public function getGroupData($params) {
 
         $fuzzy = new \block_lsuxe\models\mixed();
-        $data = $fuzzy->getCourseGroup($params);
+        $dbresult = $fuzzy->getCourseGroupData($params);
+        $results = array();
 
-        return array(
-            "success" => true,
-            // use msg if you want a message returned for notifications.
-            // "msg": "Data was found",
-            "data" => array(
-                "courseid" => $data->id,
-                "idnumber" => $data->idnumber,
-                "shortname" => $data->shortname,
-                "groupid" => $data->groupid,
-                "groupname" => $data->groupname,
-            )
-        );
+        if ($dbresult->success == true) {
+            $results["success"] = true;
+            $results["count"] = count($dbresult->data);
+            $results["data"] = $dbresult->data;
+
+        } else {
+            $results["success"] = false;
+            $results["msg"] = $dbresult->msg;
+        }
+        return $results;
+    }
+
+    /**
+     * This returns the token to the calling server.
+     * @param  array list of params being sent, but should only have url.
+     * @return array
+     */
+    public function getToken($params) {
+
+        $url = isset($params->url) ? $params->url : null;
+        $fuzzy = new \block_lsuxe\models\mixed();
+        $results = array();
+        $dbresult = $fuzzy->getTokenData($url);
+
+        if ($dbresult->success == true) {
+            $results["success"] = true;
+            $results["data"] = $dbresult->data;
+
+        } else {
+            $results["success"] = false;
+            $results["msg"] = $dbresult->msg;
+        }
+        return $results;
     }
 }

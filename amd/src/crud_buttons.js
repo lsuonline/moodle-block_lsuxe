@@ -25,8 +25,8 @@
  define(['jquery', 'block_lsuxe/notifications', 'block_lsuxe/xe_lib'],
     function($, noti, XELib) {
     'use strict';
-
     return {
+
         /**
          * Register click events for the page.
          *
@@ -36,22 +36,20 @@
         registerEvents: function () {
 
             $('.block_lsuxe_container .mview_update').on('click', function() {
-                // console.log("MVIEW_UPDATE");
                 // record will be the id of the record in the db
                 // var record = $(this).closest("tr").data("rowid");
-                // TODO: finish this.
+                // TODO: finish this by calling some scheduled task to run NOW.
             });
 
             $('.block_lsuxe_container .mview_edit').on('click', function(ev) {
                 ev.preventDefault();
-                // console.log("MVIEW_EDIT");
                 var record = $(this).closest("tr").data("rowid"),
                     send_this = {
                         "sentaction": "update",
                         "sentdata": record,
                         "vform": "1"
                     },
-                    url = localStorage["wwwroot"] + "/blocks/lsuxe/" + localStorage["xe_form"] + ".php";
+                    url = sessionStorage.getItem("wwwroot") + "/blocks/lsuxe/" + sessionStorage.getItem("xe_form") + ".php";
                 XELib.pushPost(url, send_this);
             });
 

@@ -89,10 +89,11 @@ class moodles_form extends \moodleform {
 
         // --------------------------------
         // Token Expiration Date Selector.
-        $mform->addElement(
+        $token_group = array();
+        $token_group[] =& $mform->createElement(
             'date_selector',
             'tokenexpiration',
-            get_string('tokenexpiration', 'block_lsuxe'),
+            ''
         );
         if (isset($this->_customdata->tokenexpire) && $this->_customdata->tokenexpire != "0") {
             $mform->setDefault('tokenexpiration', $this->_customdata->tokenexpire);
@@ -100,19 +101,16 @@ class moodles_form extends \moodleform {
 
         // --------------------------------
         // Moodle Instance URL.
-        $mform->addElement(
+        $token_group[] =& $mform->createElement(
             'advcheckbox',
             'enabletokenexpiration',
             get_string('tokenenable', 'block_lsuxe'),
-            get_string('tokenexpiration', 'block_lsuxe'),
-            // TODO: Change this below.........
-            array('spanky' => 1),
-            array(0,1)
         );
         if (isset($this->_customdata->tokenexpire) && $this->_customdata->tokenexpire != "0") {
             $mform->setDefault('enabletokenexpiration', 1);
         }
 
+        $mform->addGroup($token_group, 'token_group', get_string('tokenexpiration', 'block_lsuxe'), ' ', false);
         // --------------------------------
         // Hidden Elements.
         // For Page control list or view form.
@@ -121,7 +119,7 @@ class moodles_form extends \moodleform {
         $mform->setConstant('vform', 1);
 
         $mform->addElement('hidden', 'id');
-        $mform->setType('id', PARAM_INT); 
+        $mform->setType('id', PARAM_INT);
         if ($formupdating) {
             $mform->setDefault('id', $this->_customdata->id);
         }

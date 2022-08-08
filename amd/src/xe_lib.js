@@ -1,3 +1,5 @@
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -26,7 +28,7 @@ define(['jquery', 'block_lsuxe/jaxy'],
     return {
 
         /**
-         * Store data in localStorage so it's available throughout
+         * Store data in sessionStorage so it's available throughout
          *
          * @param {object} the json object to save
          * @return null
@@ -41,17 +43,14 @@ define(['jquery', 'block_lsuxe/jaxy'],
                         delete window.__INITIAL_STATE__;
                         window.__SERVER__ = false;
                     } catch (error) {
-                        // console.log("ERROR, __INITIAL_STATE__ couldn't parse.");
                         console.log(error);
                     }
                 }
             } else {
                 console.log("WARNING: window.__SERVER__ was not set");
             }
-            // console.log("What is the data: ", window_stat);
             for (var key in window_stat) {
-                // console.log("Going to store this value: " + window_stat[key] + " in this key: " + key);
-                localStorage[key] = window_stat[key];
+                sessionStorage.setItem(key, window_stat[key]);
             }
         },
 
@@ -79,17 +78,65 @@ define(['jquery', 'block_lsuxe/jaxy'],
             $(form).submit();
         },
 
+        /**
+         * Build the select on a form. (INCOMPLETE)
+         *
+         * @param {string} token
+         * @return {Promise}
+         *
+        buildSelect: function (data) {
+
+            var options = [];
+            $.each(results, function(index, data) {
+                options.push({
+                    value: data.id + '__' + data.shortname,
+                    label: data.shortname
+                });
+            });
+            return options;
+        }/
+
+        /**
+         * Get the token for the current selected URL
+         *
+         * @param {string} token
+         * @return {Promise}
+         */
+        getTokenForURL: function (url) {
+            return this.jaxyPromise({
+                'call': 'getToken',
+                'params': {
+                    'url': url
+                },
+                'class': 'router'
+            });
+        },
+
         /* ====================================================================== */
         /* ===================      AJAX Functions      ========================= */
         /* ====================================================================== */
-        /** Description: Make an AJAX call and return a json object. Wrapping the AJAX
-         *  call in a promise.
+        /** Make an AJAX call and return a json object, from server,
+         *  wrapping the AJAX call in a promise.
          * @param - {object} the details of the ajax call
          * @return {Promise}
          */
         jaxyPromise: function (data) {
             var promiseObj = new Promise(function (resolve) {
                 jaxy.XEAjax(JSON.stringify(data)).then(function (response) {
+                    resolve(response);
+                });
+            });
+            return promiseObj;
+        },
+
+        /** Make an AJAX call and return a json object, from REMOTE server,
+         *  wrapping the AJAX call in a promise.
+         * @param - {object} the details of the ajax call
+         * @return {Promise}
+         */
+        jaxyRemotePromise: function (data) {
+            var promiseObj = new Promise(function (resolve) {
+                jaxy.XERemoteAjax(data).then(function (response) {
                     resolve(response);
                 });
             });

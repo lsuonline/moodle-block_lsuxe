@@ -38,18 +38,59 @@ class mixed {
      * @param  object containing the course id and name
      * @return array
      */
-    public function getCourseGroup($params) {
+    public function getCourseGroupData($params) {
         global $DB;
         
         $courseid = isset($params->courseid) ? $params->courseid : null;
         $coursename = isset($params->coursename) ? $params->coursename : null;
-        
-        $coursedata = $DB->get_record_sql(
-            'SELECT c.id, c.idnumber, c.shortname, g.id as groupid, g.name as groupname
+        $return_obj = new \stdClass();
+
+        $coursedata = $DB->get_records_sql(
+            'SELECT g.id as groupid, c.id, c.idnumber, c.shortname, g.name as groupname
             FROM mdl_course c, mdl_groups g
             WHERE c.id = g.courseid AND c.id = ?',
             array($courseid)
         );
-        return $coursedata;
+        if (count($coursedata) == 0) {
+            $return_obj->success = false;
+            $return_obj->msg = "There are no groups for this course.";
+            return $return_obj;
+        } else {
+            $return_obj->success = true;
+            $return_obj->data = $coursedata;
+            return $return_obj;
+        }
+    }
+
+    /**
+     * Retrieve basic info about the course and it's group information.
+     * @param  object containing the course id and name
+     * @return array
+     */
+    public function getTokenData($url = false) {
+        global $DB;
+        $return_obj = new \stdClass();
+
+        if ($url == false ) {
+            $return_obj->success = false;
+            $return_obj->msg = "The token was not passed to the destination";
+            return $return_obj;
+        }
+
+        $token_result = $DB->get_record_sql(
+            'SELECT token from mdl_block_lsuxe_moodles where url=?',
+            array($url)
+        );
+
+        if (strlen($token_result->token) < 32) {
+            $return_obj->success = false;
+            $return_obj->msg = "The token stored on the destination did not meet the token requirements.";
+
+        } else {
+            $return_obj->success = true;
+            $return_obj->data = $token_result->token;
+        }
+
+        return $return_obj;
     }
 }

@@ -38,9 +38,9 @@ $string['lsuxe_enroll'] = 'Basic LSU Cross Enrollment';
 $string['lsuxe_full_enroll'] = 'FULL LSU Cross Enrollment';
 
 // Capabilities.
-$string['xe:admin'] = 'Administer the Cross Enrollment system.';
-$string['xe:addinstance'] = 'Add a new Cross Enrollment block to a course page';
-$string['xe:myaddinstance'] = 'Add a new Cross Enrollment block to the /my page';
+$string['lsuxe:admin'] = 'Administer the Cross Enrollment system.';
+$string['lsuxe:addinstance'] = 'Add a new Cross Enrollment block to a course page';
+$string['lsuxe:myaddinstance'] = 'Add a new Cross Enrollment block to the /my page';
 
 // General Terms.
 $string['backtocourse'] = 'Back to course';
@@ -85,6 +85,7 @@ $string['updatenow'] = 'Update Now';
 $string['edit'] = 'Edit';
 $string['delete'] = 'Delete';
 $string['nomappings'] = 'No Mappings to view';
+$string['manualgroupentry'] = 'Click manually enter a group name.';
 
 // Forms New Moodles.
 $string['instanceurl'] = 'Moodle Instance URL';

@@ -40,20 +40,12 @@ class moodles extends \block_lsuxe\persistents\persistent {
 
             // TODO: Robert changed the following and need to update.....
             /*
-            
             ADDED "teacherrole"
             ADDED "studentrole"
-            ADDED "usercreated"
-            ADDED "usermodified"
-            ADDED "timemodified"
-            ADDED "userdeleted"
-
-            TODO: 
-                DONE - Update definition
-                Update column_record_check function
-                Update column_form_symetric function
-                Update column_form_custom
-                Update transform_for_view
+            DONE - ADDED "usercreated"
+            DONE - ADDED "usermodified"
+            DONE - ADDED "timemodified"
+            DONE - ADDED "userdeleted"
             */
             
             'url' => [
@@ -61,9 +53,13 @@ class moodles extends \block_lsuxe\persistents\persistent {
             ],
             'teacherrole' => [
                 'type' => PARAM_INT,
+                // 'default' => null,
+                // 'null' => NULL_ALLOWED
             ],
             'studentrole' => [
                 'type' => PARAM_INT,
+                // 'default' => null,
+                // 'null' => NULL_ALLOWED
             ],
             'token' => [
                 'type' => PARAM_TEXT,
@@ -140,8 +136,8 @@ class moodles extends \block_lsuxe\persistents\persistent {
      * @param object All form data and tidbits to be extracted and/or interpolated.
      * @return void The object is referenced.
      */
-    public function column_form_custom(&$to_save, $data) {
-
+    public function column_form_custom(&$to_save, $data, $update = false) {
+        global $USER;
         // This comes from the form, first 2 are done, process the rest
         // ------------------------------------------------------------------------
         // instanceurl
@@ -170,10 +166,15 @@ class moodles extends \block_lsuxe\persistents\persistent {
         //      userdeleted
         //      timedeleted
 
-
-
-        $to_save->timecreated = time();
-        $to_save->timemodified = time();
+        // If it's new then update first time fields.
+        if ($update == false) {
+            $to_save->timecreated = time();
+            $to_save->usercreated = $USER->id;
+        } else {
+            // It's an update, so change the modified fields.
+            $to_save->usermodified = $USER->id;
+            $to_save->timemodified = time();
+        }
         // The interval is a select and will be a string, need to typecast it.
         $to_save->updateinterval = (int) $data->defaultupdateinterval;
         // the token expire
@@ -183,14 +184,9 @@ class moodles extends \block_lsuxe\persistents\persistent {
             $to_save->tokenexpire = 0;
         }
 
-        // TODO: (I assume the following but just to be clear.....)
-        // $to_savfe->teacherrole   ??
-        // $to_savfe->studentrole   ??
-        // $to_save->usercreated    Admin user (their id) that created this?
-        // $to_save->timemodified   When an admin user udpates the record?
-        // $to_save->usermodified   Admin user (their id) that updated this?
-        // $to_save->userdeleted    Admin user (their id) that deleted this?
-        // $to_save->timedeleted    When an admin user deleted this record?
+        // TODO: This is a placeholder in order to save/update the form.
+        $to_save->teacherrole = 99;
+        $to_save->studentrole = 99;
     }
 
     /**

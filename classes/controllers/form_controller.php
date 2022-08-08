@@ -85,7 +85,6 @@ class form_controller {
             $params[$key] = $data->$val;
         }
         $count = $po::count_records($params);
-
         return $count > 1 ? false : true;
     }
 
@@ -118,9 +117,6 @@ class form_controller {
             } else {
                 $validate_errors = $po->get_errors();
                 // TODO: convert error_log to a logging system
-                error_log("\n\n");
-                error_log("save_record() ERROR: " . print_r($validate_errors, 1));
-                error_log("\n\n");
                 return false;
             }
 
@@ -148,7 +144,7 @@ class form_controller {
         }
 
         // Now to add any specific fields for this form object.
-        $po->column_form_custom($to_save, $data);
+        $po->column_form_custom($to_save, $data, true);
 
         // Let's gather the form data.
         foreach ($to_save as $key => $val) {
@@ -163,6 +159,7 @@ class form_controller {
      * @return bool
      */
     public function delete_record($record) {
+        global $USER;
         $pname = $this->persist_path . $this->persistent_name;
         $po = new $pname($record);
 
@@ -170,7 +167,10 @@ class form_controller {
         $exists = $po->record_exists($record);
         // Permanently delete the object from the database.
         if ($exists) {
-            $po->delete();
+            // $po->delete();
+            $po->set('userdeleted', $USER->id);
+            $po->set('timedeleted', time());
+            $po->update();
         }
     }
 

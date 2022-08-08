@@ -26,7 +26,12 @@
 namespace block_lsuxe\form;
 
 use block_lsuxe\controllers\form_controller;
+use block_lsuxe\form\groupform_autocomplete;
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
+
+\MoodleQuickForm::registerElementType('groupform_autocomplete',
+    $CFG->dirroot . '/blocks/lsuxe/classes/form/groupform_autocomplete.php',
+    '\\block_lsuxe\\form\\groupform_autocomplete');
 
 class mappings_form extends \moodleform {
     /*
@@ -45,38 +50,92 @@ class mappings_form extends \moodleform {
         // Get data for the form
         $mform =& $this->_form;
 
+        // This is for styling purposes, not using.....yet.
+        // $mform->addElement('html', '<span class="lsuxe_course_picker">');
         // --------------------------------
         // Course Shortname.
         $options = array('multiple' => false);
-        $mform->addElement('html', '<span class="lsuxe_course_picker">');
         $courseselect = $mform->addElement(
             'course',
             'srccourseshortname',
             get_string('srccourseshortname', 'block_lsuxe'),
-            $options
+            $options,
+            array('ajax' => 'block_lsuxe/course_search')
         );
 
         if (isset($this->_customdata->shortname)) {
-            $courseselect->setSelected($this->_customdata->shortname);
-            $courseselect->setMultiple(false);
+            $courseselect->setValue($this->_customdata->courseid);
         }
-        $mform->addElement('html', '</span>');
         
+        // ----------------------------------------------------------------
+        // ------------------- Source Group  ------------------------------
+        // Override for manual group name entry.
+        $mform->addElement(
+            'advcheckbox',
+            'selectgroupentry',
+            get_string('manualgroupentry', 'block_lsuxe'),
+        );
+        $mform->setDefault('selectgroupentry', 0);
+
+        // Select Source Group Name, there could be MULTIPLE groups to choose form 
+        // ** NOTE ** this must also match in the form_events.js code where the group form resets
+        if (isset($this->_customdata->groupname)) {
+            $defaultgroupselect = array($this->_customdata->groupid => $this->_customdata->groupname);
+        } else {
+            $defaultgroupselect = array("Please search for a course first");
+        }
+
         // --------------------------------
-        // Course Group Name.
+        $mform->addElement(
+            'select',
+            'srccoursegroupnameselect',
+            get_string('srccoursegroupname', 'block_lsuxe'),
+            $defaultgroupselect,
+        );
+
+        // --------------------------------
+        // Manual Source Group Name.
         $mform->addElement(
             'text',
-            'srccoursegroupname',
+            'srccoursegroupnametext',
             get_string('srccoursegroupname', 'block_lsuxe'),
         );
         $mform->setType(
-            'srccoursegroupname',
+            'srccoursegroupnametext',
             PARAM_TEXT
         );
+        // if (isset($this->_customdata->groupname)) {
+        //     $mform->setDefault('srccoursegroupnametext', $this->_customdata->groupname);
+        // }
+
+        // --------------------------------
+        // Moodle removes any select items that are added via AJAX. In order to save this
+        // the value will be stored in this hidden input.
+        $mform->addElement('hidden', 'srccoursegroupname');
+        $mform->setType('srccoursegroupname', PARAM_TEXT);
         if (isset($this->_customdata->groupname)) {
             $mform->setDefault('srccoursegroupname', $this->_customdata->groupname);
+        } else {
+            $mform->setDefault('srccoursegroupname', "");
         }
+
+        // --------------------------------
+        $mform->addElement('hidden', 'srccoursegroupid');
+        $mform->setType('srccoursegroupid', PARAM_INT);
+        if (isset($this->_customdata->groupname)) {
+            $mform->setDefault('srccoursegroupid', $this->_customdata->groupid);
+        } else {
+            $mform->setDefault('srccoursegroupid', "");
+        }
+
+        $mform->disabledIf('srccoursegroupnameselect', 'selectgroupentry', 'checked');
+        $mform->disabledIf('srccoursegroupnametext', 'selectgroupentry', 'notchecked');
         
+        $mform->hideIf('srccoursegroupnameselect', 'selectgroupentry', 'checked');
+        $mform->hideIf('srccoursegroupnametext', 'selectgroupentry', 'notchecked');
+        // ----------------------------------------------------------------
+        // ----------------------------------------------------------------
+
         // --------------------------------
         // Moodle Instance.
         $mform->addElement(
@@ -88,25 +147,27 @@ class mappings_form extends \moodleform {
         );
         if (isset($this->_customdata->destgroupprefix)) {
             $mform->setDefault('available_moodle_instances', $this->_customdata->destmoodleid);
-            // $mform->setValue('available_moodle_instances', $this->_customdata->destmoodleid);
         }
+
         // --------------------------------
-        // Destination Course Shortname.
+        // Destination Course Group name autocomplete
         $mform->addElement(
-            'text',
+            'groupform_autocomplete',
+            // 'autocomplete',
             'destcourseshortname',
             get_string('destcourseshortname', 'block_lsuxe'),
+            // $deez_attributes
         );
-        $mform->setType(
-            'destcourseshortname',
-            PARAM_TEXT
-        );
+        // $mform->setType(
+        //     'destcourseshortname',
+        //     PARAM_TEXT
+        // );
         if (isset($this->_customdata->destcourseshortname)) {
             $mform->setDefault('destcourseshortname', $this->_customdata->destcourseshortname);
         }
 
         // --------------------------------
-        // Destination Course Group name.
+        // Destination Course Group name manual entry
         $mform->addElement(
             'text',
             'destcoursegroupname',
@@ -133,6 +194,7 @@ class mappings_form extends \moodleform {
         if (isset($this->_customdata->updateinterval)) {
             $select->setSelected($this->_customdata->updateinterval);
         }
+
         // --------------------------------
         // Hidden Elements.
         // For Page control list or view form.
@@ -158,6 +220,7 @@ class mappings_form extends \moodleform {
         ];
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
+        // $mform->addElement('html', '</span>');
     }
 
     /*
@@ -184,7 +247,5 @@ class mappings_form extends \moodleform {
         }
 
         return $errors;
-    }
-
-    
+    }    
 }

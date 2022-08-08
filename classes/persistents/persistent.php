@@ -75,9 +75,9 @@ abstract class persistent extends \core\persistent {
     public static function get_all_records($this_form = null) {
         global $DB;
 
-        $sql = 'SELECT * FROM {' . static::TABLE . '}';
+        $sql = 'SELECT * FROM {' . static::TABLE . '} WHERE timedeleted IS NULL';
 
-        $recordset = $DB->get_records(static::TABLE);
+        $recordset = $DB->get_records_sql($sql);
         $these_mappings = array();
         foreach ($recordset as $record) {
             // convert record from obj to array

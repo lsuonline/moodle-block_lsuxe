@@ -25,18 +25,22 @@
  define(['jquery', 'block_lsuxe/xe_lib', 'block_lsuxe/form_events'],
     function($, XELib, XEEvents) {
     'use strict';
-
     return {
 
         /**
-         * This is the starting function for the TCS
+         * This is the starting function for the Cross Enrollment Tool
          * @param {object} extras is data coming from PHP
          */
-
         init: function() {
-            // console.log("Did we get data from PHP: ", data);
+            // Clear the session storage so it won't last outside of the form page.
+            sessionStorage.removeItem("currentToken");
+            sessionStorage.removeItem("currentUrl");
+
+            // Process any data being sent here.
             XELib.preLoadConfig();
-            XEEvents.registerEvents();
+
+            // Register any click events and other start up processes.
+            XEEvents.init();
         }
     };
 });

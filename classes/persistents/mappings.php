@@ -44,14 +44,8 @@ class mappings extends \block_lsuxe\persistents\persistent {
             ADDED "timecreated"
             ADDED "usermodified"
             ADDED "timemodified"
-
-            TODO:
-                DONE - Update definition
-                Update column_record_check function
-                Update column_form_symetric function
-                Update column_form_custom
-                Update transform_for_view
             */
+
             'courseid' => [
                 'type' => PARAM_INT,
             ],
@@ -150,7 +144,7 @@ class mappings extends \block_lsuxe\persistents\persistent {
             'shortname' => 'srccourseshortname',
             'groupname' => 'srccoursegroupname',
             'destcourseshortname' => 'destcourseshortname',
-            'destgroupprefix' => 'destcoursegroupname'
+            // 'destgroupprefix' => 'destcoursegroupname'
 
             // Variable names from the form
             //    srccourseshortname
@@ -187,14 +181,14 @@ class mappings extends \block_lsuxe\persistents\persistent {
      * @param object All form data and tidbits to be extracted and/or interpolated.
      * @return void The object is referenced.
      */
-    public function column_form_custom(&$to_save, $data) {
-        global $DB;
+    public function column_form_custom(&$to_save, $data, $update = false) {
+        global $DB, $USER;
 
         // The course shortname field is an autocomplete that returns the course id
         $courseid = $to_save->shortname;
 
-        $coursedata = $DB->get_records_sql(
-            'SELECT c.id, c.idnumber, c.shortname, g.id as groupid, g.name as groupname
+        $coursedata = $DB->get_record_sql(
+            'SELECT g.id as groupid, c.id as courseid, c.idnumber, c.shortname, g.name as groupname
             FROM mdl_course c, mdl_groups g
             WHERE c.id = g.courseid AND c.id = ?',
             array($courseid)
@@ -213,31 +207,57 @@ class mappings extends \block_lsuxe\persistents\persistent {
         //      destgroupid
         //      starttime
         //      endtime
-        //      usercreated
-        //      timecreated
-        //      usermodified
-        //      timemodified
+
+        //      -usercreated
+        //      -timecreated
+        //      -usermodified
+        //      -timemodified
         //      userdeleted
         //      timedeleted
         //      timeprocessed
-        //      *** NEW ***
-        //      timecreated
-        //      usermodified
-        //      timemodified
+
+        // If it's new then update first time fields.
+        if ($update == false) {
+            $to_save->timecreated = time();
+            $to_save->usercreated = $USER->id;
+        } else {
+            // It's an update, so change the modified fields.
+            $to_save->usermodified = $USER->id;
+            $to_save->timemodified = time();
+        }
 
         // The interval is a select and will be a string, need to typecast it.
-        $to_save->courseid = $coursedata[$courseid]->id;
-        $to_save->shortname = $coursedata[$courseid]->shortname;
+        $to_save->courseid = $coursedata->courseid;
+        $to_save->shortname = $coursedata->shortname;
+
+        // The source groupname varies and have to check if the user used a select form or RAW Text.
+        if ($data->selectgroupentry == "1") {
+            // The user used RAW Text to enter the group name
+            $to_save->groupname = $data->srccoursegroupnametext;
+        } else {
+            // The user used the select which means we have groupid and name
+            $to_save->groupname = $data->srccoursegroupname;
+            $to_save->groupid = $data->srccoursegroupid;
+        }
+
         $to_save->updateinterval = (int) $data->defaultupdateinterval;
-        $to_save->groupid = $coursedata[$courseid]->groupid;
+
+
         // TODO: course idnumber is available in $coursedata->idnumber, do we want to store this?
         // TODO: authmethod is REQUIRED so a placeholder is set for now.
         $to_save->authmethod = "manual";
-        $to_save->usercreated = time();
-        $to_save->timecreated = time();
+
+        if (strpos($data->destcourseshortname, '__') !== false) {
+            $split_dest_info = explode("__", $data->destcourseshortname);
+            $to_save->destcourseid = $split_dest_info[0];
+            $to_save->destcourseshortname = $split_dest_info[1];
+        
+        // } else {
+            // TODO: Need to implement manual text for destination course
+            // TODO: Need to implement manual text for destination group
+        }
 
         // TODO: How do we want to retrieve the following
-        // $to_save->destcourseshortname    AJAX?
         // $to_save->destgroupid            AJAX?
         // $to_save->authmethod             AJAX?
         // $to_save->destcourseid           AJAX?
@@ -275,7 +295,12 @@ class mappings extends \block_lsuxe\persistents\persistent {
                 array('id' => $this_record['destmoodleid']),
                 $fields = '*'
             );
-            $this_record['moodleurl'] = $dest_moodle->url;
+            if ($dest_moodle) {
+                $this_record['moodleurl'] = $dest_moodle->url;
+            } else {
+                // the moodle instance may have been deleted.
+                $this_record['moodleurl'] = "The URL has been deleted.";
+            }
         }
         return $data;
     }
