@@ -170,7 +170,7 @@ class block_lsuxe extends block_list {
         $icon = $OUTPUT->pix_icon($params['icon_key'], $label, 'moodle', ['class' => 'icon']);
 
         return html_writer::link(
-            new moodle_url('/blocks/lsuxe/' . $params['page'] . '.php', $params['query_string']),
+            new moodle_url($CFG->wwwroot . '/blocks/lsuxe/' . $params['page'] . '.php', $params['query_string']),
             $icon . $label
         );
     }

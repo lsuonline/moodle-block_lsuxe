@@ -28,7 +28,7 @@
 $string['pluginname'] = 'Cross Enrollment Tool';
 $string['foldername'] = 'Cross Enrollments';
 $string['adminname'] = 'Manage Cross Enrollments';
-$string['settings'] = 'Settings';
+$string['settings'] = 'Cross Enrollments';
 
 // Tasks.
 $string['lsuxe_courses'] = 'Fetch Remote Courseids';
@@ -128,4 +128,4 @@ $string['instancetokenverify'] = 'A Moodle token is required from the destinatio
 
 // Settings
 $string['xe_interval_main_title'] = 'Update Interval Times.';
-$string['xe_interval_list'] = 'Comma seperated list of intervals to choose from.';
+$string['xe_interval_list'] = 'List of intervals to choose from in a matching format.';

@@ -26,7 +26,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 // Create the settings block.
-$settings = new admin_settingpage($section, get_string('settings'));
+$settings = new admin_settingpage($section, get_string('settings', 'block_lsuxe'));
 
 // Make sure only admins see this one.
 if ($ADMIN->fulltree) {

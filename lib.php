@@ -40,6 +40,7 @@ class lsuxe_helpers {
         $moodleurl = new \moodle_url($url, $urlparams);
         redirect($moodleurl, '', $delay);
     }
+
     /**
      * Config Converter - config settings that have multiple lines with
      * a key value settings will be broken down and converted into an

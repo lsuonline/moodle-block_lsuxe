@@ -49,7 +49,7 @@ class moodles_form extends \moodleform {
         $mform->addElement(
             'text',
             'instanceurl',
-            get_string('instanceurl', 'block_lsuxe'),
+            get_string('instanceurl', 'block_lsuxe')
         );
         $mform->setType(
             'instanceurl',
@@ -63,7 +63,7 @@ class moodles_form extends \moodleform {
         $mform->addElement(
             'text',
             'instancetoken',
-            get_string('instancetoken', 'block_lsuxe'),
+            get_string('instancetoken', 'block_lsuxe')
         );
         $mform->setType(
             'instancetoken',
@@ -104,7 +104,7 @@ class moodles_form extends \moodleform {
         $token_group[] =& $mform->createElement(
             'advcheckbox',
             'enabletokenexpiration',
-            get_string('tokenenable', 'block_lsuxe'),
+            get_string('tokenenable', 'block_lsuxe')
         );
         if (isset($this->_customdata->tokenexpire) && $this->_customdata->tokenexpire != "0") {
             $mform->setDefault('enabletokenexpiration', 1);
@@ -130,7 +130,7 @@ class moodles_form extends \moodleform {
         $thissubmitbutton = $formupdating ? get_string('savechanges', 'block_lsuxe') : get_string('saveinstance', 'block_lsuxe');
         $buttons = [
             $mform->createElement('submit', 'send', $thissubmitbutton),
-            $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe')),
+            $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe'))
         ];
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);

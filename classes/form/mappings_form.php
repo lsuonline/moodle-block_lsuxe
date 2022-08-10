@@ -73,7 +73,7 @@ class mappings_form extends \moodleform {
         $mform->addElement(
             'advcheckbox',
             'selectgroupentry',
-            get_string('manualgroupentry', 'block_lsuxe'),
+            get_string('manualgroupentry', 'block_lsuxe')
         );
         $mform->setDefault('selectgroupentry', 0);
 
@@ -90,7 +90,7 @@ class mappings_form extends \moodleform {
             'select',
             'srccoursegroupnameselect',
             get_string('srccoursegroupname', 'block_lsuxe'),
-            $defaultgroupselect,
+            $defaultgroupselect
         );
 
         // --------------------------------
@@ -98,7 +98,7 @@ class mappings_form extends \moodleform {
         $mform->addElement(
             'text',
             'srccoursegroupnametext',
-            get_string('srccoursegroupname', 'block_lsuxe'),
+            get_string('srccoursegroupname', 'block_lsuxe')
         );
         $mform->setType(
             'srccoursegroupnametext',
@@ -152,16 +152,16 @@ class mappings_form extends \moodleform {
         // --------------------------------
         // Destination Course Group name autocomplete
         $mform->addElement(
-            'groupform_autocomplete',
-            // 'autocomplete',
+            'text',
             'destcourseshortname',
-            get_string('destcourseshortname', 'block_lsuxe'),
-            // $deez_attributes
+            get_string('destcourseshortname', 'block_lsuxe')
         );
-        // $mform->setType(
-        //     'destcourseshortname',
-        //     PARAM_TEXT
-        // );
+
+        $mform->setType(
+            'destcourseshortname',
+            PARAM_TEXT
+        );
+
         if (isset($this->_customdata->destcourseshortname)) {
             $mform->setDefault('destcourseshortname', $this->_customdata->destcourseshortname);
         }
@@ -171,7 +171,7 @@ class mappings_form extends \moodleform {
         $mform->addElement(
             'text',
             'destcoursegroupname',
-            get_string('destcoursegroupname', 'block_lsuxe'),
+            get_string('destcoursegroupname', 'block_lsuxe')
         );
         $mform->setType(
             'destcoursegroupname',
@@ -216,7 +216,7 @@ class mappings_form extends \moodleform {
         $buttons = [
             $mform->createElement('submit', 'send', $thissubmitbutton),
             $mform->createElement('button', 'verifysource', get_string('verifysrccourse', 'block_lsuxe')),
-            $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe')),
+            $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe'))
         ];
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
