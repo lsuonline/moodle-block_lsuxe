@@ -43,13 +43,23 @@ class moodles_form extends \moodleform {
         }
 
         $mform =& $this->_form;
+        // checkmark from here:
+        // https://codepen.io/scottloway/pen/zqoLyQ
 
+        $checkmark = ''.
+            '<div class="circle-loader">'.
+                '<div class="checkmark draw"></div>'.
+            '</div>'.
+            '<span class="circle-cross-loader">'.
+                '<span class="crossmark"></span>'.
+            '<span>';
         // --------------------------------
         // Moodle Instance URL.
-        $mform->addElement(
+        $urlgroup = array();
+        $urlgroup[] =& $mform->createElement(
             'text',
             'instanceurl',
-            get_string('instanceurl', 'block_lsuxe')
+            get_string('instanceurl', 'block_lsuxe'),
         );
         $mform->setType(
             'instanceurl',
@@ -58,9 +68,21 @@ class moodles_form extends \moodleform {
         if (isset($this->_customdata->url)) {
             $mform->setDefault('instanceurl', $this->_customdata->url);
         }
+        // Wrap the checkmark so we can control it for tokens
+        $urlconfirmhtml = '<div class="xe_confirm_url">'.$checkmark.'</div';
+        $urlgroup[] =& $mform->createElement(
+            'html', $urlconfirmhtml
+        );
+        $mform->addGroup($urlgroup, 'url_group', get_string('instanceurl', 'block_lsuxe'), ' ', false);
+        
+        // ----------------------------------------------------------------
+        // ----------------------------------------------------------------
+        // ----------------------------------------------------------------
         // --------------------------------
         // Moodle Instance Token.
-        $mform->addElement(
+        $tokengroup = array();
+        $tokengroup[] =& $mform->createElement(
+        // $mform->addElement(
             'text',
             'instancetoken',
             get_string('instancetoken', 'block_lsuxe')
@@ -72,6 +94,16 @@ class moodles_form extends \moodleform {
         if (isset($this->_customdata->token)) {
             $mform->setDefault('instancetoken', $this->_customdata->token);
         }
+        // Wrap the checkmark so we can control it for tokens
+        $tokenconfirmhtml = '<div class="xe_confirm_token">'.$checkmark.'</div';
+        $tokengroup[] =& $mform->createElement(
+            'html', $tokenconfirmhtml
+        );
+        $mform->addGroup($tokengroup, 'token_group', get_string('instancetoken', 'block_lsuxe'), ' ', false);
+        // ----------------------------------------------------------------
+        // ----------------------------------------------------------------
+
+
 
         // --------------------------------
         // Interval.
@@ -89,8 +121,8 @@ class moodles_form extends \moodleform {
 
         // --------------------------------
         // Token Expiration Date Selector.
-        $token_group = array();
-        $token_group[] =& $mform->createElement(
+        $tokenexpiregroup = array();
+        $tokenexpiregroup[] =& $mform->createElement(
             'date_selector',
             'tokenexpiration',
             ''
@@ -101,7 +133,7 @@ class moodles_form extends \moodleform {
 
         // --------------------------------
         // Moodle Instance URL.
-        $token_group[] =& $mform->createElement(
+        $tokenexpiregroup[] =& $mform->createElement(
             'advcheckbox',
             'enabletokenexpiration',
             get_string('tokenenable', 'block_lsuxe')
@@ -110,7 +142,7 @@ class moodles_form extends \moodleform {
             $mform->setDefault('enabletokenexpiration', 1);
         }
 
-        $mform->addGroup($token_group, 'token_group', get_string('tokenexpiration', 'block_lsuxe'), ' ', false);
+        $mform->addGroup($tokenexpiregroup, 'tokenexpirationgroup', get_string('tokenexpiration', 'block_lsuxe'), ' ', false);
         // --------------------------------
         // Hidden Elements.
         // For Page control list or view form.
@@ -130,7 +162,7 @@ class moodles_form extends \moodleform {
         $thissubmitbutton = $formupdating ? get_string('savechanges', 'block_lsuxe') : get_string('saveinstance', 'block_lsuxe');
         $buttons = [
             $mform->createElement('submit', 'send', $thissubmitbutton),
-            $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe'))
+            $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe')),
         ];
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);

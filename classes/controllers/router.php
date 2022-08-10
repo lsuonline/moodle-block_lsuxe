@@ -80,4 +80,8 @@ class router {
         }
         return $results;
     }
+
+    public function testService($params) {
+        return array("success" => true);
+    }
 }

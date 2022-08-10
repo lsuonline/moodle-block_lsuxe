@@ -24,6 +24,10 @@
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+global $CFG;
+    // Link to get back
+$string['lsuxe_link_back_title'] = '<a href="'.$CFG->wwwroot.'/blocks/lsuxe/lsuxe.php">Back to XE Dashboard</a>';
+
 // Block.
 $string['pluginname'] = 'Cross Enrollment Tool';
 $string['foldername'] = 'Cross Enrollments';
@@ -129,3 +133,6 @@ $string['instancetokenverify'] = 'A Moodle token is required from the destinatio
 // Settings
 $string['xe_interval_main_title'] = 'Update Interval Times.';
 $string['xe_interval_list'] = 'List of intervals to choose from in a matching format.';
+$string['xe_experimental_title'] = 'Experimental Settings.';
+$string['xe_form_auto_enable'] = 'Enable Form Autocompletion.';
+$string['xe_form_auto_enable_desc'] = 'This will use core ajax features and webservices to fetch data and auto populate the form fields to make the form easy to use while reducing potential typing errors. WARNING: ajax calls may fail.';

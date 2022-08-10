@@ -31,6 +31,15 @@ $settings = new admin_settingpage($section, get_string('settings', 'block_lsuxe'
 // Make sure only admins see this one.
 if ($ADMIN->fulltree) {
     // --------------------------------
+    // Dashboard Link
+    $settings->add(
+        new admin_setting_heading(
+            'lsuxe_link_back_title',
+            get_string('lsuxe_link_back_title', 'block_lsuxe'),
+            ''
+        )
+    );
+    // --------------------------------
     // LSUXE Settings Title.
     $settings->add(
         new admin_setting_heading(
@@ -52,6 +61,26 @@ if ($ADMIN->fulltree) {
             Daily 24
             Hourly 1',
             PARAM_TEXT
+        )
+    );
+
+    // LSUXE Experimental Title.
+    $settings->add(
+        new admin_setting_heading(
+            'block_lsuxe_xe_experimental_title',
+            get_string('xe_experimental_title', 'block_lsuxe'),
+            ''
+        )
+    );
+
+    // --------------------------------
+    // Use AJAX for form autocomplete.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_lsuxe_enable_form_auto',
+            get_string('xe_form_auto_enable', 'block_lsuxe'),
+            get_string('xe_form_auto_enable_desc', 'block_lsuxe'),
+            0   // Default.
         )
     );
 }

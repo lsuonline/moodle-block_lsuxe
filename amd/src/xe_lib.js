@@ -102,6 +102,17 @@ define(['jquery', 'block_lsuxe/jaxy'],
          * @param {string} token
          * @return {Promise}
          */
+        testWebServices: function (params) {
+            // lsut/ 333cbddcab2ada64d9e8ca0ec49c6414
+            return this.jaxyRemotePromise(params);
+        },
+
+        /**
+         * Get the token for the current selected URL
+         *
+         * @param {string} token
+         * @return {Promise}
+         */
         getTokenForURL: function (url) {
             return this.jaxyPromise({
                 'call': 'getToken',
@@ -110,6 +121,16 @@ define(['jquery', 'block_lsuxe/jaxy'],
                 },
                 'class': 'router'
             });
+        },
+
+        isValidUrl: function (urlString) {
+            var urlPattern = new RegExp('^(https?:\\/\\/)?'+ // validate protocol
+            '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // validate domain name
+            '((\\d{1,3}\\.){3}\\d{1,3}))'+ // validate OR ip (v4) address
+            '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // validate port and path
+            '(\\?[;&a-z\\d%_.~+=-]*)?'+ // validate query string
+            '(\\#[-a-z\\d_]*)?$','i'); // validate fragment locator
+            return !!urlPattern.test(urlString);
         },
 
         /* ====================================================================== */

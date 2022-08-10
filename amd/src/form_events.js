@@ -69,6 +69,181 @@
         setHiddenValue: function (tag, value) {
             $('input[name='+tag+']').val(value);
         },
+        // ==================================================================
+        // ==================================================================
+        // ==================================================================
+        // ==================================================================
+        // ==================================================================
+        // ==================================================================
+        // ==================================================================
+        // ==================================================================
+
+        checkMarkOn: function (tag) {
+            console.log("checkMarkOn() -> has been called.");
+            $(tag + ' .circle-loader').css('visibility', 'visible');
+        },
+        checkMarkOff: function (tag) {
+            console.log("checkMarkOff() -> has been called.");
+            $(tag + ' .circle-loader').css('visibility', 'hidden');
+        },
+        checkMarkLoading: function (tag) {
+            // make sure it's on
+            var cl = tag + ' .circle-loader',
+                cm = tag + ' .checkmark';
+
+            this.checkMarkOn(tag);
+            if ($(cl).hasClass('load-complete')) {
+                $(cl).toggleClass('load-complete');
+                $(cm).toggle();
+            }
+            console.log("checkMarkLoading() -> has been called.");
+
+            // $('.xe_confirm_url > .checkmark').toggle();
+        },
+        checkMarkComplete: function (tag) {
+            var cl = tag + ' .circle-loader',
+                cm = tag + ' .checkmark';
+
+            if (!$(cl).hasClass('load-complete')) {
+                $(cl).toggleClass('load-complete');
+                $(cm).toggle();
+            }
+        },
+        crossMarkOn: function (tag) {
+            console.log("crossMarkOn() -> has been called.");
+            $(tag + ' .circle-cross-loader').css('visibility', 'visible');
+        },
+
+        crossMarkOff: function (tag) {
+            console.log("crossMarkOff() -> has been called.");
+            $(tag + ' .circle-cross-loader').css('visibility', 'hidden');
+        },
+
+        /**
+         * Register all the events for the Mappings Form Page.
+         * @return void
+         */
+        registerMoodleEvents: function() {
+            var that = this,
+                url_tag = '.xe_confirm_url',
+                token_tag = '.xe_confirm_token';
+            // Moodle URL Events
+            // Check if the URL is valid
+            // -------------------------------------------
+            $("#id_instanceurl").on("input", function() {
+                // that.handleInputValidation(this, ".xe_confirm_url");
+                console.log("What is the input length: " + this.value.length);
+                if (this.value.length > 0) {
+                    // Show the circle loading
+
+                    that.checkMarkLoading(url_tag);
+                }
+                if (this.value.length == 0) {
+                    that.checkMarkOff(url_tag);
+                }
+            });
+            // -------------------------------------------
+            // When the user clicks out of the Moodle URL input box, check if url is valid.
+            $('#id_instanceurl').on('blur',  function() {
+                // that.handleBlurValidation(this, '.xe_confirm_url');
+                // console.log("What is the url to check: " + this.value);
+
+                // user has clicked out of the URL input, let's check it.
+                if (this.value.length > 0) {
+                    // there is something in the input, let's verify it's correct
+                    if (XELib.isValidUrl(this.value)) {
+                        console.log("The url is valid");
+                        that.checkMarkComplete(url_tag);
+                        that.crossMarkOff(url_tag);
+
+                    } else {
+                        that.checkMarkOff(url_tag);
+                        that.crossMarkOn(url_tag);
+                        console.log("The url is NOT valid");
+                        // $('.xe_confirm_url > .circle-cross-loader').css('visibility', 'visible');
+                    }
+                } else {
+                    that.checkMarkOff(url_tag);
+                    that.crossMarkOff(url_tag);
+                }
+            });
+            // -------------------------------------------
+            $('#id_instanceurl').on('focus',  function() {
+                // No matter what, if a user clicks in the input, remove the crossmark.
+                that.crossMarkOff(url_tag);
+            });
+
+            // ===========================================
+            // ===========================================
+            // Handle the token input.
+            $("#id_instancetoken").on('input', function() {
+                if (this.value.length > 0) {
+                    // Show the circle loading
+                    that.checkMarkLoading(token_tag);
+                }
+                if (this.value.length == 0) {
+                    that.checkMarkOff(token_tag);
+                }
+            });
+            // -------------------------------------------
+            $("#id_instancetoken").on('blur', function() {
+                // that.handleBlurValidation(this, ".xe_confirm_token");
+                if (this.value.length > 31) {
+                    // The token length is correct
+                    that.checkMarkComplete(token_tag);
+                    that.crossMarkOff(token_tag);
+
+                } else if (this.value.length < 1) {
+                    that.checkMarkOff(token_tag);
+                    that.crossMarkOff(token_tag);
+
+                } else {
+                    that.crossMarkOn(token_tag);
+                    console.log("The token is NOT valid");
+                    // $('.xe_confirm_token > .circle-cross-loader').css('visibility', 'visible');
+                }
+            });
+            // -------------------------------------------
+            $('#id_instancetoken').on('focus',  function() {
+                // that.handleInputValidation(this, ".xe_confirm_token");
+                // No matter what, if a user clicks in the input, remove the crossmark.
+                that.crossMarkOff(token_tag);
+
+            });
+
+            // $('body').keypress(function(e){
+            //     console.log('keypress', String.fromCharCode( e.which ));
+            //     console.log('what is ewhich: ' + e.which);
+            //     if (e.which == 49) {
+            //         $('.xe_confirm_url .circle-loader').toggleClass('load-complete');
+            //         $('.xe_confirm_url .checkmark').toggle();
+
+            //     } else if (e.which == 50) {
+            //         $('.xe_confirm_token .circle-loader').toggleClass('load-complete');
+            //         $('.xe_confirm_token .checkmark').toggle();
+            //     }
+            // });
+
+            $('#id_verifysource').on('click', function() {
+                var test_url = $("#id_instanceurl").val(),
+                    test_token = $("#id_instancetoken").val();
+
+                console.log("What is the token: " + test_token);
+                var params = {
+                    'type': 'GET',
+                    'url': test_url + '/admin/webservice/testclient.php',
+                    'data': {
+                        'wstoken': test_token,
+                        'wsfunction': 'core_course_get_categories',
+                        'moodlewsrestformat': 'json'
+                    }
+                };
+
+                XELib.testWebServices(params).then(function (response) {
+                    console.log("What is the response for the test server: ", response);
+                });
+            });
+        },
 
         /**
          * Register all the events for the Mappings Form Page.
@@ -160,7 +335,7 @@
 
             } else if (sessionStorage.getItem('xe_form') == "moodles" && sessionStorage.getItem('xe_viewform') == "true") {
                 // Register events on the mappings form.
-                console.log("Need to complete this at some point rather than loading from template");
+                this.registerMoodleEvents();
                 // TODO: move from template to here.
             }
         },
