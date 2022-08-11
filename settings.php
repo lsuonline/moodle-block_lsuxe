@@ -64,6 +64,36 @@ if ($ADMIN->fulltree) {
         )
     );
 
+    // --------------------------------
+    // LSUXE Settings Title.
+    $settings->add(
+        new admin_setting_heading(
+            'block_lsuxe_roles_title',
+            get_string('xe_roles_title', 'block_lsuxe'),
+            ''
+        )
+    );
+
+    // Remote student role id.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_lsuxe_xestudentroleid',
+            get_string('xe_studentroleid', 'block_lsuxe'),
+            get_string('xe_studentroleid_help', 'block_lsuxe'),
+            5 // Default.
+        )
+    );
+
+    // Remote teacher role id.
+    $settings->add(
+        new admin_setting_configtext(
+            'block_lsuxe_xeteacherroleid',
+            get_string('xe_teacherroleid', 'block_lsuxe'),
+            get_string('xe_teacherroleid_help', 'block_lsuxe'),
+            3 // Default.
+        )
+    );
+
     // LSUXE Experimental Title.
     $settings->add(
         new admin_setting_heading(

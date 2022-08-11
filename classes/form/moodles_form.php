@@ -162,7 +162,7 @@ class moodles_form extends \moodleform {
         $thissubmitbutton = $formupdating ? get_string('savechanges', 'block_lsuxe') : get_string('saveinstance', 'block_lsuxe');
         $buttons = [
             $mform->createElement('submit', 'send', $thissubmitbutton),
-            $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe'))
+//            $mform->createElement('button', 'verifysource', get_string('verifyinstance', 'block_lsuxe'))
         ];
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);

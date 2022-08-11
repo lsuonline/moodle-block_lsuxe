@@ -320,7 +320,7 @@ class mappings_form extends \moodleform {
         $buttons = [
             $mform->createElement('submit', 'send', $thissubmitbutton),
             $mform->createElement('button', 'verifysource', get_string('verifysrccourse', 'block_lsuxe')),
-            $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe'))
+//            $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe'))
         ];
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);

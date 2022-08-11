@@ -52,6 +52,11 @@ $string['backtohome'] = 'Back to home';
 
 // Configuration.
 $string['manage_overrides'] = 'Manage overrides';
+$string['xe_roles_title'] = 'Default Remote Role IDs';
+$string['xe_studentroleid'] = 'Remote student roleid';
+$string['xe_studentroleid_help'] = 'The default student role id for the role you wish to assign "students" to in the remote Moodle instance.';
+$string['xe_teacherroleid'] = 'Remote teacher roleid';
+$string['xe_teacherroleid_help'] = 'The default teacher role id for the role you wish to assign "teachers" to in the remote Moodle instance.';
 
 // Links.
 $string['xedashboard'] = 'XE Dashboard';
