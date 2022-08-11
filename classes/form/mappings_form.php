@@ -55,7 +55,8 @@ class mappings_form extends \moodleform {
         // --------------------------------
         // Course Shortname.
         $enable_autocomplete = get_config('moodle', "block_lsuxe_enable_form_auto");
-        
+        $enable_dest_test = get_config('moodle', "block_lsuxe_enable_dest_test");
+
         if ($enable_autocomplete) {
             // USE THE AUTOCOMPLETE FEATURES FOR COURSE AND GROUP.
             $options = array('multiple' => false);
@@ -319,9 +320,11 @@ class mappings_form extends \moodleform {
         $thissubmitbutton = $formupdating ? get_string('savechanges', 'block_lsuxe') : get_string('savemapping', 'block_lsuxe');
         $buttons = [
             $mform->createElement('submit', 'send', $thissubmitbutton),
-            $mform->createElement('button', 'verifysource', get_string('verifysrccourse', 'block_lsuxe')),
-//            $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe'))
+            $mform->createElement('button', 'verifysource', get_string('verifysrccourse', 'block_lsuxe'))
         ];
+        if ($enable_dest_test) {
+            $buttons[] = $mform->createElement('button', 'verifydest', get_string('verifydestcourse', 'block_lsuxe'));
+        }
 
         $mform->addGroup($buttons, 'actions', '&nbsp;', [' '], false);
         // $mform->addElement('html', '</span>');

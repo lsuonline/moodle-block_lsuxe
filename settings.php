@@ -113,4 +113,15 @@ if ($ADMIN->fulltree) {
             0
         )
     );
+
+    // --------------------------------
+    // Use AJAX for form autocomplete.
+    $settings->add(
+        new admin_setting_configcheckbox(
+            'block_lsuxe_enable_dest_test',
+            get_string('xe_form_enable_dest_source_test', 'block_lsuxe'),
+            get_string('xe_form_enable_dest_source_test_desc', 'block_lsuxe'),
+            0
+        )
+    );
 }
