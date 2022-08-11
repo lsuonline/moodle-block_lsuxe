@@ -49,7 +49,7 @@ class lsuxe {
 
         lsuxe_helpers::xe_write_destgroups($groups);
 
-        $users = lsuxe_helpers::xe_current_enrollments();
+        $users = lsuxe_helpers::xe_current_enrollments(true);
 
         $count = 0;
         foreach ($users as $user) {
@@ -123,7 +123,7 @@ class lsuxe {
             mtrace("Normal Moodle Enrollment");
         }
 
-        $users = lsuxe_helpers::xe_current_enrollments();
+        $users = lsuxe_helpers::xe_current_enrollments(true);
 
         $count = 0;
         foreach ($users as $user) {
@@ -187,7 +187,7 @@ class lsuxe {
             mtrace("Normal Moodle Enrollment");
         }
 
-        $users = lsuxe_helpers::xe_current_enrollments();
+        $users = lsuxe_helpers::xe_current_enrollments(true);
 
         $count = 0;
         foreach ($users as $user) {
