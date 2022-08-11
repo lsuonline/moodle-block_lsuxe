@@ -161,7 +161,7 @@ class block_lsuxe extends block_list {
      * @return string
      */
     private function build_item($params) {
-        global $OUTPUT;
+        global $CFG, $OUTPUT;
 
         $label = $params['lang_key'];
         $icon = $OUTPUT->pix_icon($params['icon_key'], $label, 'moodle', ['class' => 'icon']);
