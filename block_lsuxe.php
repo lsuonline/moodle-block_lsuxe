@@ -100,14 +100,11 @@ class block_lsuxe extends block_list {
         // $systemcontext = context_system::instance();
 
         if (is_siteadmin()) {
-            error_log("\n");
-            error_log("\n\n Yes I AM SITE ADMIN ");
-            error_log("\n");
 
             $this->add_item_to_content([
                 'lang_key' => get_string('mappings_view', 'block_lsuxe'),
                 'icon_key' => 'i/mnethost',
-                'page' => 'mappings',
+                'page' => 'mappings'
             ]);
 
             $this->add_item_to_content([
@@ -120,13 +117,13 @@ class block_lsuxe extends block_list {
             $this->add_item_to_content([
                 'lang_key' => get_string('tokens_view', 'block_lsuxe'),
                 'icon_key' => 't/unlock',
-                'page' => 'tokens',
+                'page' => 'tokens'
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('moodles_view', 'block_lsuxe'),
                 'icon_key' => 't/calc',
-                'page' => 'moodles',
+                'page' => 'moodles'
             ]);
 
             $this->add_item_to_content([

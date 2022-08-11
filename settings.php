@@ -80,7 +80,7 @@ if ($ADMIN->fulltree) {
             'block_lsuxe_enable_form_auto',
             get_string('xe_form_auto_enable', 'block_lsuxe'),
             get_string('xe_form_auto_enable_desc', 'block_lsuxe'),
-            0   // Default.
+            0
         )
     );
 }

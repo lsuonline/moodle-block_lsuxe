@@ -144,7 +144,7 @@ class mappings_form extends \moodleform {
             $mform->addElement(
                 'text',
                 'srccourseshortname',
-                get_string('srccourseshortname', 'block_lsuxe'),
+                get_string('srccourseshortname', 'block_lsuxe')
             );
             $mform->setType(
                 'srccourseshortname',
@@ -155,14 +155,11 @@ class mappings_form extends \moodleform {
                 $mform->setDefault('srccourseshortname', $this->_customdata->shortname);
             }
             
-            // ----------------------------------------------------------------
-            // ------------------- Source Group  ------------------------------
-            
             // --------------------------------
             $mform->addElement(
                 'text',
                 'srccoursegroupname',
-                get_string('srccoursegroupname', 'block_lsuxe'),
+                get_string('srccoursegroupname', 'block_lsuxe')
             );
 
             $mform->setType(
@@ -173,6 +170,26 @@ class mappings_form extends \moodleform {
                 $mform->setDefault('srccoursegroupname', $this->_customdata->groupname);
             }
         }
+
+        // --------------------------------
+        $mform->addElement(
+            'date_selector',
+            'starttime',
+            get_string('coursestarttime', 'block_lsuxe')
+        );
+        if (isset($this->_customdata->starttime) && $this->_customdata->starttime != "0") {
+            $mform->setDefault('starttime', $this->_customdata->starttime);
+        }
+
+        $mform->addElement(
+            'date_selector',
+            'endtime',
+            get_string('courseendtime', 'block_lsuxe')
+        );
+        if (isset($this->_customdata->endtime) && $this->_customdata->endtime != "0") {
+            $mform->setDefault('endtime', $this->_customdata->endtime);
+        }
+        
         // --------------------------------
         // Moodle Instance.
         $mform->addElement(
@@ -193,7 +210,7 @@ class mappings_form extends \moodleform {
                 'groupform_autocomplete',
                 // 'autocomplete',
                 'destcourseshortname',
-                get_string('destcourseshortname', 'block_lsuxe'),
+                get_string('destcourseshortname', 'block_lsuxe')
                 // $deez_attributes
             );
             // $mform->setType(
@@ -224,7 +241,7 @@ class mappings_form extends \moodleform {
             $mform->addElement(
                 'text',
                 'destcourseshortname',
-                get_string('destcourseshortname', 'block_lsuxe'),
+                get_string('destcourseshortname', 'block_lsuxe')
             );
             $mform->setType(
                 'destcourseshortname',

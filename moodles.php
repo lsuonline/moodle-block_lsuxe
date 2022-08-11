@@ -43,7 +43,7 @@ $pageparams = [
     'page' => optional_param('page', 1, PARAM_INT),
     'per_page' => 10,
     'sent_action' => optional_param('sentaction', "", PARAM_TEXT),
-    'sent_data' => optional_param('sentdata', 0, PARAM_INT),
+    'sent_data' => optional_param('sentdata', 0, PARAM_INT)
 ];
 
 // Setup the page.

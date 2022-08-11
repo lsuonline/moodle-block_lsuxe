@@ -129,7 +129,7 @@ class mappings extends \block_lsuxe\persistents\persistent {
                 'type' => PARAM_INT,
                 'default' => null,
                 'null' => NULL_ALLOWED
-            ],
+            ]
         ];
     }
 
@@ -143,7 +143,7 @@ class mappings extends \block_lsuxe\persistents\persistent {
             // DB Column Name => Form Name
             'shortname' => 'srccourseshortname',
             'groupname' => 'srccoursegroupname',
-            'destcourseshortname' => 'destcourseshortname',
+            'destcourseshortname' => 'destcourseshortname'
             // 'destgroupprefix' => 'destcoursegroupname'
 
             // Variable names from the form
@@ -184,37 +184,22 @@ class mappings extends \block_lsuxe\persistents\persistent {
     public function column_form_custom(&$to_save, $data, $update = false) {
         global $DB, $USER;
 
-        // The course shortname field is an autocomplete that returns the course id
-        $courseid = $to_save->shortname;
+        $enable_autocomplete = get_config('moodle', "block_lsuxe_enable_form_auto");
+        
+        if ($enable_autocomplete) {
+            // The course shortname field is an autocomplete that returns the course id
+            $courseid = $to_save->shortname;
 
-        $coursedata = $DB->get_record_sql(
-            'SELECT g.id as groupid, c.id as courseid, c.idnumber, c.shortname, g.name as groupname
-            FROM mdl_course c, mdl_groups g
-            WHERE c.id = g.courseid AND c.id = ?',
-            array($courseid)
-        );
-        // Current form data ready to go
-        //      shortname (to be converted)
-        //      groupname
-        //      destcourseshortname
-        //      destgroupprefix
-        //      destmoodleid
-        //      updateinterval (to be converted)
-        // Remaining fields to store based on install.xml
-        //      courseid
-        //      authmethod
-        //      destcourseid
-        //      destgroupid
-        //      starttime
-        //      endtime
-
-        //      -usercreated
-        //      -timecreated
-        //      -usermodified
-        //      -timemodified
-        //      userdeleted
-        //      timedeleted
-        //      timeprocessed
+            $coursedata = $DB->get_record_sql(
+                'SELECT g.id as groupid, c.id as courseid, c.idnumber, c.shortname, g.name as groupname
+                FROM mdl_course c, mdl_groups g
+                WHERE c.id = g.courseid AND c.id = ?',
+                array($courseid)
+            );
+            // we'll have the course id
+            $to_save->courseid = $coursedata->courseid;
+            $to_save->shortname = $coursedata->shortname;
+        }
 
         // If it's new then update first time fields.
         if ($update == false) {
@@ -226,10 +211,6 @@ class mappings extends \block_lsuxe\persistents\persistent {
             $to_save->timemodified = time();
         }
 
-        // The interval is a select and will be a string, need to typecast it.
-        $to_save->courseid = $coursedata->courseid;
-        $to_save->shortname = $coursedata->shortname;
-
         // The source groupname varies and have to check if the user used a select form or RAW Text.
         if ($data->selectgroupentry == "1") {
             // The user used RAW Text to enter the group name
@@ -240,6 +221,7 @@ class mappings extends \block_lsuxe\persistents\persistent {
             $to_save->groupid = $data->srccoursegroupid;
         }
 
+        // The interval is a select and will be a string, need to typecast it.
         $to_save->updateinterval = (int) $data->defaultupdateinterval;
 
 
@@ -251,23 +233,11 @@ class mappings extends \block_lsuxe\persistents\persistent {
             $split_dest_info = explode("__", $data->destcourseshortname);
             $to_save->destcourseid = $split_dest_info[0];
             $to_save->destcourseshortname = $split_dest_info[1];
-        
+
         // } else {
             // TODO: Need to implement manual text for destination course
             // TODO: Need to implement manual text for destination group
         }
-
-        // TODO: How do we want to retrieve the following
-        // $to_save->destgroupid            AJAX?
-        // $to_save->authmethod             AJAX?
-        // $to_save->destcourseid           AJAX?
-        // $to_save->starttime              Is this source or dest course start time?
-        // $to_save->endtime                Is this source or dest course start time?
-        // $to_save->userdeleted            ?
-        // $to_save->usermodified           Admin made a change?
-        // $to_save->timedeleted            We removing the mapping or make hidden?
-        // $to_save->timemodified           Update based on mapping update?
-        // $to_save->timeprocessed          Task process time?
     }
 
     /**
