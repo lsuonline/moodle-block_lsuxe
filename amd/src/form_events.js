@@ -235,6 +235,7 @@
 
                 var params = {
                     'type': 'GET',
+                    // 'type': 'POST',
                     // 'url': test_url + '/admin/webservice/testclient.php',
                     'url': test_url + '/webservice/rest/server.php',
                     'data': {
@@ -363,6 +364,9 @@
                             type: 'error'
                         });
                     } else {
+                        // Populate the hidden fields since we are here.
+                        that.setHiddenValue('srccourseid', response.data.groupid);
+                        that.setHiddenValue('srccoursegroupid', response.data.id);
                         Noti.callNoti({
                             message: "Everything checks out for the sourse course and group.",
                             type: 'success'
@@ -381,6 +385,7 @@
                     if (("courses" in response)) {
                         // how many courses were retrieved
                         if (response.courses.length == 1) {
+                            that.setHiddenValue('destcourseid', response.courses[0].id);
                             Noti.callNoti({
                                 message: "Destination course is there and waiting for you.",
                                 type: 'success'

@@ -24,6 +24,7 @@
  */
 
 namespace block_lsuxe\persistents;
+use block_lsuxe\models;
 
 class mappings extends \block_lsuxe\persistents\persistent {
 // class mappings extends \core\persistent {
@@ -184,8 +185,10 @@ class mappings extends \block_lsuxe\persistents\persistent {
     public function column_form_custom(&$to_save, $data, $update = false) {
         global $DB, $USER;
 
+        // ----------------------------------------------------------------------
+        // -------------------  AUTOCOMPLETE  -----------------------------------
+        // ----------------------------------------------------------------------
         $enable_autocomplete = get_config('moodle', "block_lsuxe_enable_form_auto");
-        
         if ($enable_autocomplete) {
             // The course shortname field is an autocomplete that returns the course id
             $courseid = $to_save->shortname;
@@ -203,7 +206,6 @@ class mappings extends \block_lsuxe\persistents\persistent {
             // Handle the group stuff
             // The source groupname varies and have to check if the user used a select form or RAW Text.
             if (array_key_exists("selectgroupentry", $data) && $data->selectgroupentry == "1") {
-            // if ($data->selectgroupentry == "1") {
                 // The user used RAW Text to enter the group name
                 $to_save->groupname = $data->srccoursegroupnametext;
             } else {
@@ -211,9 +213,41 @@ class mappings extends \block_lsuxe\persistents\persistent {
                 $to_save->groupname = $data->srccoursegroupname;
                 $to_save->groupid = $data->srccoursegroupid;
             }
+
+            // Destination Course
+            if (strpos($data->destcourseshortname, '__') !== false) {
+                $split_dest_info = explode("__", $data->destcourseshortname);
+                $to_save->destcourseid = $split_dest_info[0];
+                $to_save->destcourseshortname = $split_dest_info[1];
+
+            // } else {
+                // TODO: Need to implement manual text for destination course
+                // TODO: Need to implement manual text for destination group
+            }
         } else {
+        // -------------------  Manual ------------------------------------------
+            // Save course id and group id, will be present if user verified.
+            // But if the user didn't verify, then fetch the data.
+            if (isset($data->srccourseid) && $data->srccourseid != 0) {
+                $to_save->courseid = $data->srccourseid;
+                $to_save->groupid = $data->srccoursegroupid;
+            } else {
+                // User didn't verify, then fetch the data.
+                $fuzzy = new \block_lsuxe\models\mixed();
+                $dbresult = $fuzzy->getCourseGroupInfo($to_save->shortname, $to_save->groupname);
+
+                $to_save->courseid = $dbresult->id;
+                $to_save->groupid = $dbresult->groupid;
+            }
+            // Save the groupname
             $to_save->groupname = $data->srccoursegroupname;
+
+            // Save course id if user verified the destination course.
+            if (isset($data->destcourseid) && $data->destcourseid != 0) {
+                $to_save->destcourseid = $data->destcourseid;
+            }
         }
+
 
         // If it's new then update first time fields.
         if ($update == false) {
@@ -224,7 +258,6 @@ class mappings extends \block_lsuxe\persistents\persistent {
             $to_save->usermodified = $USER->id;
             $to_save->timemodified = time();
         }
-
 
         // The interval is a select and will be a string, need to typecast it.
         $to_save->updateinterval = (int) $data->defaultupdateinterval;
@@ -237,16 +270,6 @@ class mappings extends \block_lsuxe\persistents\persistent {
         // TODO: course idnumber is available in $coursedata->idnumber, do we want to store this?
         // TODO: authmethod is REQUIRED so a placeholder is set for now.
         $to_save->authmethod = "manual";
-
-        if (strpos($data->destcourseshortname, '__') !== false) {
-            $split_dest_info = explode("__", $data->destcourseshortname);
-            $to_save->destcourseid = $split_dest_info[0];
-            $to_save->destcourseshortname = $split_dest_info[1];
-
-        // } else {
-            // TODO: Need to implement manual text for destination course
-            // TODO: Need to implement manual text for destination group
-        }
     }
 
     /**

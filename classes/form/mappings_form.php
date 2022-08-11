@@ -112,26 +112,6 @@ class mappings_form extends \moodleform {
             //     $mform->setDefault('srccoursegroupnametext', $this->_customdata->groupname);
             // }
 
-            // --------------------------------
-            // Moodle removes any select items that are added via AJAX. In order to save this
-            // the value will be stored in this hidden input.
-            $mform->addElement('hidden', 'srccoursegroupname');
-            $mform->setType('srccoursegroupname', PARAM_TEXT);
-            if (isset($this->_customdata->groupname)) {
-                $mform->setDefault('srccoursegroupname', $this->_customdata->groupname);
-            } else {
-                $mform->setDefault('srccoursegroupname', "");
-            }
-
-            // --------------------------------
-            $mform->addElement('hidden', 'srccoursegroupid');
-            $mform->setType('srccoursegroupid', PARAM_INT);
-            if (isset($this->_customdata->groupname)) {
-                $mform->setDefault('srccoursegroupid', $this->_customdata->groupid);
-            } else {
-                $mform->setDefault('srccoursegroupid', "");
-            }
-
             $mform->disabledIf('srccoursegroupnameselect', 'selectgroupentry', 'checked');
             $mform->disabledIf('srccoursegroupnametext', 'selectgroupentry', 'notchecked');
             
@@ -235,6 +215,15 @@ class mappings_form extends \moodleform {
             if (isset($this->_customdata->destgroupprefix)) {
                 $mform->setDefault('destcoursegroupname', $this->_customdata->destgroupprefix);
             }
+
+            $mform->addElement('hidden', 'srccoursegroupname');
+            $mform->setType('srccoursegroupname', PARAM_TEXT);
+            if (isset($this->_customdata->groupname)) {
+                $mform->setDefault('srccoursegroupname', $this->_customdata->groupname);
+            } else {
+                $mform->setDefault('srccoursegroupname', "");
+            }
+
         } else {
             // --------------------------------
             // Destination Course Group name autocomplete
@@ -283,6 +272,35 @@ class mappings_form extends \moodleform {
 
         // --------------------------------
         // Hidden Elements.
+
+        // Moodle removes any select items that are added via AJAX. In order to save this
+        // the value will be stored in this hidden input.
+        $mform->addElement('hidden', 'srccourseid');
+        $mform->setType('srccourseid', PARAM_INT);
+        if (isset($this->_customdata->groupname)) {
+            $mform->setDefault('srccourseid', $this->_customdata->courseid);
+        } else {
+            $mform->setDefault('srccourseid', "");
+        }
+
+        // --------------------------------
+        $mform->addElement('hidden', 'srccoursegroupid');
+        $mform->setType('srccoursegroupid', PARAM_INT);
+        if (isset($this->_customdata->groupname)) {
+            $mform->setDefault('srccoursegroupid', $this->_customdata->groupid);
+        } else {
+            $mform->setDefault('srccoursegroupid', "");
+        }
+        
+        // --------------------------------
+        $mform->addElement('hidden', 'destcourseid');
+        $mform->setType('destcourseid', PARAM_INT);
+        if (isset($this->_customdata->destcourseid)) {
+            $mform->setDefault('destcourseid', $this->_customdata->destcourseid);
+        } else {
+            $mform->setDefault('destcourseid', "");
+        }
+
         // For Page control list or view form.
         $mform->addElement('hidden', 'vform');
         $mform->setType('vform', PARAM_INT); 

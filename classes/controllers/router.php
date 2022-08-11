@@ -101,12 +101,12 @@ class router {
             $return_obj->msg = "There are multiple records.";
         } else {
             $return_obj->success = true;
-            $return_obj->data = $dbresult;
+            $dbresult = array_values($dbresult);
+            $return_obj->data = $dbresult[0];
         }
 
         return $return_obj;
     }
-
 
     public function testService($params) {
         return array("success" => true);

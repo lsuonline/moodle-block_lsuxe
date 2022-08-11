@@ -114,4 +114,22 @@ class mixed {
 
         return $coursedata;
     }
+
+    /**
+     * Fetch the course and group
+     * @param  array containing course name and group name
+     * @return array
+     */
+    public function getCourseGroupInfo($coursename = false, $groupname = false) {
+        global $DB;
+        
+        $coursedata = $DB->get_record_sql(
+            'SELECT g.id as groupid, c.id, c.idnumber, c.shortname, g.name as groupname
+            FROM mdl_course c, mdl_groups g
+            WHERE c.id = g.courseid AND c.shortname = ? AND g.name = ?',
+            array($coursename, $groupname)
+        );
+
+        return $coursedata;
+    }
 }
