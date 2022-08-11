@@ -199,6 +199,20 @@ class mappings extends \block_lsuxe\persistents\persistent {
             // we'll have the course id
             $to_save->courseid = $coursedata->courseid;
             $to_save->shortname = $coursedata->shortname;
+
+            // Handle the group stuff
+            // The source groupname varies and have to check if the user used a select form or RAW Text.
+            if (array_key_exists("selectgroupentry", $data) && $data->selectgroupentry == "1") {
+            // if ($data->selectgroupentry == "1") {
+                // The user used RAW Text to enter the group name
+                $to_save->groupname = $data->srccoursegroupnametext;
+            } else {
+                // The user used the select which means we have groupid and name
+                $to_save->groupname = $data->srccoursegroupname;
+                $to_save->groupid = $data->srccoursegroupid;
+            }
+        } else {
+            $to_save->groupname = $data->srccoursegroupname;
         }
 
         // If it's new then update first time fields.
@@ -211,18 +225,13 @@ class mappings extends \block_lsuxe\persistents\persistent {
             $to_save->timemodified = time();
         }
 
-        // The source groupname varies and have to check if the user used a select form or RAW Text.
-        if ($data->selectgroupentry == "1") {
-            // The user used RAW Text to enter the group name
-            $to_save->groupname = $data->srccoursegroupnametext;
-        } else {
-            // The user used the select which means we have groupid and name
-            $to_save->groupname = $data->srccoursegroupname;
-            $to_save->groupid = $data->srccoursegroupid;
-        }
 
         // The interval is a select and will be a string, need to typecast it.
         $to_save->updateinterval = (int) $data->defaultupdateinterval;
+        
+        // Update the start and end times (if any).
+        $to_save->starttime = (int) $data->starttime;
+        $to_save->endtime = (int) $data->endtime;
 
 
         // TODO: course idnumber is available in $coursedata->idnumber, do we want to store this?
