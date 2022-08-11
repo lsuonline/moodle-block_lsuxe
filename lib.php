@@ -105,9 +105,7 @@ class lsuxe_helpers {
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
-                ue.timestart AS "timestart",
-                ue.timeend AS "timeend"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -117,13 +115,11 @@ class lsuxe_helpers {
                 INNER JOIN {user} u ON u.id = stu.userid
                 INNER JOIN {enrol} e ON e.courseid = c.id
                     AND e.enrol = "ues"
-                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                    AND ue.userid = u.id
                 INNER JOIN {groups} g ON g.courseid = c.id
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -159,9 +155,7 @@ class lsuxe_helpers {
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
-                ue.timestart AS "timestart",
-                ue.timeend AS "timeend"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -171,13 +165,11 @@ class lsuxe_helpers {
                 INNER JOIN {user} u ON u.id = stu.userid
                 INNER JOIN {enrol} e ON e.courseid = c.id
                     AND e.enrol = "ues"
-                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                    AND ue.userid = u.id
                 INNER JOIN {groups} g ON g.courseid = c.id
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -212,9 +204,7 @@ class lsuxe_helpers {
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
-                ue.timestart AS "timestart",
-                ue.timeend AS "timeend"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -228,7 +218,7 @@ class lsuxe_helpers {
                     AND ctx.instanceid = c.id
                     AND ctx.contextlevel = "50"
                 INNER JOIN {groups} g ON g.courseid = c.id
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id
                     AND u.id = gm.userid
             WHERE xemm.destcourseid IS NOT NULL
                 AND xemm.destgroupid IS NOT NULL
