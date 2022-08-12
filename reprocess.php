@@ -34,6 +34,8 @@ $pageparams = [
     'function' => required_param('function', PARAM_TEXT)
 ];
 
+$function = $pageparams['function'];
+
 // Authentication.
 require_login();
 if (!is_siteadmin()) {
@@ -41,7 +43,7 @@ if (!is_siteadmin()) {
 }
 
 $langstring = "reprocess_$function";
-$backlangstring = "xebackto$function";
+$backlangstring = "xebacktomoodle";
 
 $title = get_string('pluginname', 'block_lsuxe') . ': ' . get_string('reprocess', 'block_lsuxe');
 $pagetitle = $title;
@@ -56,7 +58,7 @@ $PAGE->set_heading($title);
 $PAGE->set_pagelayout('admin');
 
 // Navbar Bread Crumbs
-$PAGE->navbar->add(get_string($backlangstring, 'block_lsuxe'), new moodle_url('/course/view.php?id=' . $pageparams['courseid'] . '#coursetools'));
+$PAGE->navbar->add(get_string($backlangstring, 'block_lsuxe'), new moodle_url('/blocks/lsuxe/lsuxe.php'));
 
 echo $OUTPUT->header();
 echo $OUTPUT->heading($sectiontitle);

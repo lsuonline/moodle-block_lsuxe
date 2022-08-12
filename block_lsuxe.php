@@ -96,42 +96,33 @@ class block_lsuxe extends block_list {
             $this->add_item_to_content([
                 'lang_key' => get_string('mappings_view', 'block_lsuxe'),
                 'icon_key' => 'i/mnethost',
-                'page' => 'mappings'
+                'page' => '/blocks/lsuxe/mappings.php'
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('mappings_create', 'block_lsuxe'),
                 'icon_key' => 'i/mnethost',
-                'page' => 'mappings',
+                'page' => '/blocks/lsuxe/mappings.php',
                 'query_string' => ['vform' => 1]
             ]);
             
             $this->add_item_to_content([
                 'lang_key' => get_string('tokens_view', 'block_lsuxe'),
                 'icon_key' => 't/unlock',
-                'page' => 'tokens'
+                'page' => '/admin/settings.php?section=webservicetokens'
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('moodles_view', 'block_lsuxe'),
                 'icon_key' => 't/calc',
-                'page' => 'moodles'
+                'page' => '/blocks/lsuxe/moodles.php'
             ]);
 
             $this->add_item_to_content([
                 'lang_key' => get_string('moodles_create', 'block_lsuxe'),
                 'icon_key' => 't/calc',
-                'page' => 'moodles',
+                'page' => '/blocks/lsuxe/moodles.php',
                 'query_string' => ['vform' => 1]
-            ]);
-            
-        } else if (is_siteadmin() && $COURSE->id > 1) {
-
-            $this->add_item_to_content([
-                'lang_key' => get_string('reprocess', 'block_lsuxe'),
-                'icon_key' => 't/calc',
-                'page' => 'reprocess',
-                'query_string' => ['intervals' => 'false', 'courseid' => $COURSE->id, 'moodleid' => 0, 'function' => 'course']
             ]);
         }
         
@@ -167,7 +158,7 @@ class block_lsuxe extends block_list {
         $icon = $OUTPUT->pix_icon($params['icon_key'], $label, 'moodle', ['class' => 'icon']);
 
         return html_writer::link(
-            new moodle_url($CFG->wwwroot . '/blocks/lsuxe/' . $params['page'] . '.php', $params['query_string']),
+            new moodle_url($CFG->wwwroot . $params['page'] , $params['query_string']),
             $icon . $label
         );
     }
@@ -176,7 +167,7 @@ class block_lsuxe extends block_list {
     public function applicable_formats() {
         return array(
             'site' => true,
-            'course-view' => true 
+            'course-view' => false
         );
     }
 
