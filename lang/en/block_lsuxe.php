@@ -25,7 +25,8 @@
  */
 
 global $CFG;
-    // Link to get back
+
+// Link to get back
 $string['lsuxe_link_back_title'] = '<a href="'.$CFG->wwwroot.'/blocks/lsuxe/lsuxe.php">Back to XE Dashboard</a>';
 
 // Block.
@@ -33,6 +34,7 @@ $string['pluginname'] = 'Cross Enrollment Tool';
 $string['foldername'] = 'Cross Enrollments';
 $string['adminname'] = 'Manage Cross Enrollments';
 $string['settings'] = 'Cross Enrollments';
+$string['reprocess'] = 'Reprocess';
 
 // Tasks.
 $string['lsuxe_courses'] = 'Fetch Remote Courseids';
@@ -145,3 +147,9 @@ $string['xe_form_auto_enable'] = 'Enable Form Autocompletion.';
 $string['xe_form_auto_enable_desc'] = 'This will use core ajax features and webservices to fetch data and auto populate the form fields to make the form easy to use while reducing potential typing errors. WARNING: ajax calls may fail.';
 $string['xe_form_enable_dest_source_test'] = 'Enable Verify Destination.';
 $string['xe_form_enable_dest_source_test_desc'] = 'This is currently in development and is designed to verify that the remote server is ready when creating new mappings or new moodle instances.';
+
+// Reprocessing
+$string['reprocess_course'] = 'Reprocess Course';
+$string['reprocess_moodle'] = 'Reprocess Moodle Instance';
+$string['xebacktocourse'] = 'Back to course';
+$string['xebacktomoodle'] = 'Back to XE dashboard';

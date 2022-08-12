@@ -36,11 +36,6 @@ class block_lsuxe extends block_list {
         global $PAGE;
 
         $this->title = get_string('pluginname', 'block_lsuxe');
-        // $this->set_course();
-        // $this->set_user();
-        // $this->set_course_context();
-        // $extras = array();
-        // $PAGE->requires->js_call_amd('block_lsuxe/main', 'init', $extras);
     }
 
    /**
@@ -83,7 +78,7 @@ class block_lsuxe extends block_list {
     }
 
     function get_content() {
-        global $CFG, $OUTPUT;
+        global $COURSE, $OUTPUT;
 
         if ($this->content !== null) {
             return $this->content;
@@ -96,10 +91,7 @@ class block_lsuxe extends block_list {
 
         $this->content = $this->get_new_content_container();
 
-        // $coursecontext = context_course::instance($this->course->id);
-        // $systemcontext = context_system::instance();
-
-        if (is_siteadmin()) {
+        if (is_siteadmin() && $COURSE->id == 1) {
 
             $this->add_item_to_content([
                 'lang_key' => get_string('mappings_view', 'block_lsuxe'),
@@ -133,6 +125,14 @@ class block_lsuxe extends block_list {
                 'query_string' => ['vform' => 1]
             ]);
             
+        } else if (is_siteadmin() && $COURSE->id > 1) {
+
+            $this->add_item_to_content([
+                'lang_key' => get_string('reprocess', 'block_lsuxe'),
+                'icon_key' => 't/calc',
+                'page' => 'reprocess',
+                'query_string' => ['intervals' => 'false', 'courseid' => $COURSE->id, 'moodleid' => 0, 'function' => 'course']
+            ]);
         }
         
         return $this->content;
@@ -175,19 +175,13 @@ class block_lsuxe extends block_list {
     // my moodle can only have SITEID and it's redundant here, so take it away
     public function applicable_formats() {
         return array(
-            'all' => true, // TODO: remove this once done dev
             'site' => true,
-            'my' => true,
-            'site-index' => true,
-            'course-view' => false, 
-            'course-view-social' => false,
-            'mod' => false, 
-            'mod-quiz' => false
+            'course-view' => true 
         );
     }
 
     public function instance_allow_multiple() {
-        return true;
+        return false;
     }
 
     public function cron() {
