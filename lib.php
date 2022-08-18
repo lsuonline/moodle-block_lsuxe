@@ -49,24 +49,37 @@ class lsuxe_helpers {
      * Weekly 168
      * .....etc
      * Becomes (Monthly => 720, Weekly => 168)
-     * @param  string  $config setting
+     * @param  string $config_string setting
+     * @param  string $array_type by default multi, use mirror to miror key/value
+     *         
      * @return array
      */
-    public function config_to_array($config_string) {
+    public function config_to_array($config_string, $array_type = "multi") {
+
         $config_name = get_config('moodle', $config_string);
 
         // Strip the line breaks
         $break_stripped = preg_replace("/\r|\n/", " ", $config_name);
-
-        // make sure there are not double spaces.
+        // Make sure there are not double spaces.
         $break_stripped = str_replace("  ", " ", $break_stripped);
+        // Remove any spaces or line breaks from start or end.
+        $break_stripped = trim($break_stripped);
 
-        // now convert to arry and transform to an assoc. array
         $exploded = explode(" ", $break_stripped);
         $exploded_count = count($exploded);
         $final = array();
-        for ($i = 0; $i < $exploded_count; $i+=2) {
-            $final[$exploded[$i+1]] = $exploded[$i];
+
+        if ($array_type == "multi") {
+            // now convert to array and transform to an assoc. array
+            for ($i = 0; $i < $exploded_count; $i+=2) {
+                $final[$exploded[$i+1]] = $exploded[$i];
+            }
+        } else if ($array_type == "mirror") {
+            // it's possible there may be an extra line break from user input.
+            for ($i = 0; $i < $exploded_count; $i++) {
+                $tempval = $exploded[$i];
+                $final[$tempval] = $tempval;
+            }
         }
         return $final;
     }
