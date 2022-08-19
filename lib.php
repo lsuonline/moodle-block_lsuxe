@@ -121,6 +121,7 @@ class lsuxe_helpers {
                 "student" AS "role",
                 u.auth AS "auth",
                 xemm.id AS "xemmid",
+                xemm.auth AS "xauth",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xem.teacherrole AS "teacherrole",
@@ -171,6 +172,7 @@ class lsuxe_helpers {
                 "editingteacher" AS "role",
                 u.auth AS "auth",
                 xemm.id AS "xemmid",
+                xemm.auth AS "xauth",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xem.teacherrole AS "teacherrole",
@@ -220,6 +222,7 @@ class lsuxe_helpers {
                 mr.shortname AS "role",
                 u.auth AS "auth",
                 xemm.id AS "xemmid",
+                xemm.auth AS "xauth",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xem.teacherrole AS "teacherrole",
@@ -691,7 +694,7 @@ class lsuxe_helpers {
         $luser->firstname     = $user->firstname;
         $luser->lastname      = $user->lastname;
         $luser->alternatename = $user->alternatename;
-        $luser->auth          = $user->auth;
+        $luser->auth          = $user->xauth;
 
         if ($luser == $ruser) {
             mtrace("The local ($luser->username) and remote user ($ruser->username) objects match entirely. Skipping.");
@@ -727,7 +730,7 @@ class lsuxe_helpers {
             'users[0][id]' => $returneduser['id'],
             'users[0][username]' => $user->username,
             'users[0][email]' => $user->email,
-            'users[0][auth]' => $user->auth,
+            'users[0][auth]' => $user->xauth,
             'users[0][firstname]' => $user->firstname,
             'users[0][lastname]' => $user->lastname,
             'users[0][alternatename]' => $user->alternatename,
@@ -789,7 +792,7 @@ class lsuxe_helpers {
             'moodlewsrestformat' => 'json',
             'users[0][username]' => $user->username,
             'users[0][email]' => $user->email,
-            'users[0][auth]' => $user->auth,
+            'users[0][auth]' => $user->xauth,
             'users[0][firstname]' => $user->firstname,
             'users[0][lastname]' => $user->lastname,
             'users[0][alternatename]' => $user->alternatename,
