@@ -105,7 +105,7 @@ class lsuxe_helpers {
         }
 
         // LSU UES Specific enrollemnt / unenrollment data.
-        $lsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
+        $lsql = 'SELECT CONCAT(c.id, "_", g.id, "_", u.id, "_", stu.status) AS "xeid",
                 u.id AS "userid",
                 c.id AS "sourcecourseid",
                 c.shortname AS "sourcecourseshortname",
@@ -156,7 +156,7 @@ class lsuxe_helpers {
 
             UNION
 
-            SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
+            SELECT CONCAT(c.id, "_", g.id, "_", u.id, "_", stu.status) AS "xeid",
                 u.id AS "userid",
                 c.id AS "sourcecourseid",
                 c.shortname AS "sourcecourseshortname",
@@ -206,7 +206,7 @@ class lsuxe_helpers {
                 ' . $interval . $wheres;
 
         // Generic Moodle enrollment / suspension data.
-        $gsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
+        $gsql = 'SELECT CONCAT(c.id, "_", g.id, "_", u.id, "_", IF(ue.status = 0, "enrolled", "unenrolled")) AS "xeid",
                 u.id AS "userid",
                 c.id AS "sourcecourseid",
                 c.shortname AS "sourcecourseshortname",
