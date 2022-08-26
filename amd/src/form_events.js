@@ -101,8 +101,17 @@
                 }
             };
             return XELib.jaxyRemotePromise(new_params);
-         },
+        },
 
+
+        resetGroupList: function () {
+            $('#id_srccoursegroupnameselect').empty();
+            $('#id_srccoursegroupnametext').text();
+            $('#id_srccoursegroupnameselect')
+                .append($("<option></option>")
+                .attr("value", 0)
+                .text("Please search for a course first"));
+        },
         // ==================================================================
         // ==================================================================
         // ==================================================================
@@ -261,7 +270,6 @@
                 src_form_select = $("#id_srccourseshortname");
 
             src_form_select.change(function() {
-
                 if (src_form_select.val()) {
                     // change invokes any change so only make an ajax call if there is value
                     that.getGroupData({
@@ -269,12 +277,11 @@
                         'coursename': $( "#id_srccourseshortname option:selected" ).text()
                     },).then(function (response) {
                         // if the text is disabled then use select
-                        if (response.count == 1) {
-                            // Single entry so let's update the text field
-                            $('#id_srccoursegroupnameselect').val(response.data.groupname);
-                            $('#id_srccoursegroupname').val(response.data.groupname);
+                        if (response.count == 0) {
+                            // There are no groups, reset.
+                            that.resetGroupList();
 
-                        } else if (response.count > 1) {
+                        } else {
                             // Multiple groups, so let's unhide the select
                             $('#id_srccoursegroupnameselect').empty();
                             var first_choice = "";
@@ -296,20 +303,12 @@
                             // select option.
                             that.setHiddenValue('srccoursegroupname', first_choice.groupname);
                             that.setHiddenValue('srccoursegroupid', first_choice.groupid);
-                        } else {
-                            // TODO: The count is neither 1 or greate than 1 so no groups?
-                            // display no groups.
                         }
 
                     });
                 } else {
                     // if there is no value in the course name then clear out the group name.
-                    $('#id_srccoursegroupnameselect').empty();
-                    $('#id_srccoursegroupnametext').text();
-                    $('#id_srccoursegroupnameselect')
-                        .append($("<option></option>")
-                        .attr("value", 0)
-                        .text("Please search for a course first"));
+                    that.resetGroupList();
                 }
             });
 
