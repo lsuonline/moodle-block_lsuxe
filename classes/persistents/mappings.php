@@ -300,6 +300,9 @@ class mappings extends \block_lsuxe\persistents\persistent {
                 // the moodle instance may have been deleted.
                 $this_record['moodleurl'] = "The URL has been deleted.";
             }
+
+            // Convert timestamp to readable date for enrollment endtime.
+            $this_record['endtime'] = userdate($this_record['endtime']);
         }
         return $data;
     }

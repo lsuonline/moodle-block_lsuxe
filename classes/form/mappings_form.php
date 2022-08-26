@@ -62,7 +62,6 @@ class mappings_form extends \moodleform {
         $mform->addElement('html', '<span class="lsuxe_form_container">');
         // --------------------------------
         // Course Shortname.
-        // if ($this->enable_autocomplete) {
         if ($enable_autocomplete) {
             // USE THE AUTOCOMPLETE FEATURES FOR COURSE AND GROUP.
             $options = array('multiple' => false);
@@ -95,8 +94,6 @@ class mappings_form extends \moodleform {
                 $defaultgroupselect
             );
 
-            // ----------------------------------------------------------------
-            // ----------------------------------------------------------------
         } else {
             // MANUAL ENTER THE COURSE AND GROUP INTO THE FIELDS
             $mform->addElement(
@@ -178,19 +175,19 @@ class mappings_form extends \moodleform {
         if ($enable_autocomplete) {
             // --------------------------------
             // Destination Course Group name autocomplete
-            $mform->addElement(
+            $destcourseselect = $mform->addElement(
                 'groupform_autocomplete',
-                // 'autocomplete',
                 'destcourseshortname',
                 get_string('destcourseshortname', 'block_lsuxe')
-                // $deez_attributes
             );
-            // $mform->setType(
-            //     'destcourseshortname',
-            //     PARAM_TEXT
-            // );
+            
             if (isset($this->_customdata->destcourseshortname)) {
-                $mform->setDefault('destcourseshortname', $this->_customdata->destcourseshortname);
+                $destcourseselect->setValue(
+                    array(
+                        $this->_customdata->destcourseid,
+                        $this->_customdata->destcourseshortname
+                    )
+                );
             }
 
             // --------------------------------

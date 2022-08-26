@@ -100,6 +100,7 @@ $string['edit'] = 'Edit';
 $string['delete'] = 'Delete';
 $string['nomappings'] = 'No Mappings to view';
 $string['manualgroupentry'] = 'Click manually enter a group name.';
+$string['enrolenddate'] = 'Enrolment End Date.';
 
 // Forms New Moodles.
 $string['instanceurl'] = 'Moodle Instance URL';

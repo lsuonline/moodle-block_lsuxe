@@ -83,18 +83,7 @@ class groupform_autocomplete extends MoodleQuickForm_autocomplete {
     public function setValue($value) {
         global $DB;
 
-        $values = (array) $value;
-        $ids = array();
-
-        foreach ($values as $onevalue) {
-            if (!empty($onevalue) && (!$this->optionExists($onevalue)) &&
-                    ($onevalue !== '_qf__force_multiselect_submission')) {
-                array_push($ids, $onevalue);
-            }
-        }
-
-        if (empty($ids)) {
-            return $this->setSelected(array());
-        }
+        $this->addOption($value[1], $value[0]);
+        return $this->setSelected($value[0]);        
     }
 }

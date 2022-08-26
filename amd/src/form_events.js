@@ -75,7 +75,7 @@
         },
 
         /**
-         * Verify the source course and group
+         * Verify the source course and group.
          *
          * @param {object} params the json object sent to the server
          * @return {Object} resolved data
@@ -88,6 +88,12 @@
             });
         },
 
+        /**
+         * Verify the destination course.
+         *
+         * @param {object} params the json object sent to the server
+         * @return {Object} resolved data
+         */
         verifyDestCourse: function (params) {
             var new_params = {
                 'type': 'GET',
@@ -104,6 +110,11 @@
         },
 
 
+        /**
+         * Reset the dropdown for the source group.
+         *
+         * @return null
+         */
         resetGroupList: function () {
             $('#id_srccoursegroupnameselect').empty();
             $('#id_srccoursegroupnametext').text();
@@ -431,6 +442,12 @@
             }
         },
 
+        /**
+         * The entry point for the mappings and moodles form.
+         * Register the events and load the token.
+         *
+         * @return null
+         */
         init: function () {
             this.registerEvents();
             this.getTokenReady();

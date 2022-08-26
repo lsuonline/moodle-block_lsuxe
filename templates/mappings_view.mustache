@@ -80,6 +80,7 @@
                     <th><a href="?sort=subject&dir=asc">{{# str }} destcourseshortname, block_lsuxe {{/ str }}</a></th>
                 {{/destShortname}}
 
+                <th>{{# str }} enrolenddate, block_lsuxe {{/ str }}</th>
                 <th>{{# str }} updateinterval, block_lsuxe {{/ str }}</th>
                 <th>{{# str }} updatenow, block_lsuxe {{/ str }}</th>
                 <th>{{# str }} edit, block_lsuxe {{/ str }}</th>
@@ -97,6 +98,7 @@
                     <td><a href="{{xeurl}}/course/view.php?id={{courseid}}" target="_blank">{{shortname}}</a></td>
                     <td><a href="{{xeurl}}/group/index.php?id={{groupid}}" target="_blank">{{groupname}}</a></td>
                     <td><a href="{{moodleurl}}/course/view.php?id={{courseid}}" target="_blank">{{destcourseshortname}}</a></td>
+                    <td>{{endtime}}</td>
                     <td>{{{updateinterval}}}</td>
                     <td><a href="{{xeurl}}/blocks/lsuxe/reprocess.php?{{xeparms}}{{courseid}}" class="btn btn-success mview_update"><i class="fa fa-refresh"></i></a></td>
                     <td><button type="submit" class="btn btn-warning mview_edit"><i class="fa fa-pencil"></i></button></td>
