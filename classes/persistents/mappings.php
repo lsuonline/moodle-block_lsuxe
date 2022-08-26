@@ -206,7 +206,8 @@ class mappings extends \block_lsuxe\persistents\persistent {
             // Handle the group stuff
             // The source groupname varies and have to check if the user used a
             // select form or RAW Text.
-            if (array_key_exists("selectgroupentry", $data) && $data->selectgroupentry == "1") {
+
+            if (property_exists($data, "selectgroupentry") && $data->selectgroupentry == "1") {
                 // The user used RAW Text to enter the group name
                 $to_save->groupname = $data->srccoursegroupnametext;
             } else {

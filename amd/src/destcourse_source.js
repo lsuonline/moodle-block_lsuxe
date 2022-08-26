@@ -34,6 +34,7 @@ define(['jquery', 'core/ajax', 'core/notification', 'block_lsuxe/xe_lib'],
          * @return {Promise}
          */
          getCourses: function (params) {
+
             var params = {
                 'type': 'GET',
                 'url': sessionStorage.getItem("currentUrl") + '/webservice/rest/server.php',

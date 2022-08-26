@@ -26,6 +26,11 @@ define(['jquery', 'core/ajax',],
     function($, Ajax) {
     'use strict';
     return {
+
+        isAorO: function(val) {
+            return val instanceof Array || val instanceof Object ? true : false;
+        },
+
         /**
          * AJAX method to access the external services for Cross Enrollment
          *
@@ -71,16 +76,12 @@ define(['jquery', 'core/ajax',],
          * @return {promise} Resolved with an array of the calendar events
          */
         XERemoteAjax: function(data_chunk) {
+            var that = this;
             var promiseObj = new Promise(function(resolve) {
                 $.ajax({
                     type: data_chunk.type,
                     data: data_chunk.data,
                     url: data_chunk.url,
-                // }).then(function (response) {
-                //     console.log("XEREMOTE what is responses: ", responses);
-                //     resolve(JSON.parse(responses.data));
-                // });
-
                 }).done(function (response) {
                     // If token is incorrect Moodle will throw an exception.
                     if (response.hasOwnProperty('exception')) {
@@ -89,7 +90,14 @@ define(['jquery', 'core/ajax',],
                             'msg': response.message
                         });
                     } else {
-                        resolve(JSON.parse(response.data));
+                        // Need to handle the response. If the request is for Moodle Core
+                        // then the response is an array or object (isAorO).
+                        // otherwise it's a stringified JSON object.
+                        if (that.isAorO(response)) {
+                            resolve(response);
+                        } else {
+                            resolve(JSON.parse(response.data));
+                        }
                     }
                 }).fail(function ( jqXHR, textStatus, errorThrown ) {
                     console.log(jqXHR);

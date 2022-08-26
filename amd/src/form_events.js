@@ -43,6 +43,7 @@
                     sessionStorage.setItem("currentToken", response.data);
                     sessionStorage.setItem("currentUrl", url);
                 } else {
+                    console.log("ERROR: Failed to get the token :-( ");
                     // TODO: Send Notification to user that token is crap
                 }
             });
@@ -116,7 +117,7 @@
          * @return {void}
          */
         registerMoodleEvents: function() {
-            var that = this;
+            // var that = this;
                 // url_tag = '.xe_confirm_url',
                 // token_tag = '.xe_confirm_token';
             // Moodle URL Events
@@ -202,15 +203,6 @@
                 var test_url = $("#id_instanceurl").val(),
                     test_token = $("#id_instancetoken").val();
 
-                // console.log("What is the tag name1: " + this.prop("tagName"));
-                // console.log("What is the tag name2: " + $(this).prop("tagName"));
-                // that.checkMarkLoading(url_tag);
-                // that.crossMarkOn(token_tag);
-                // that.checkMarkOff(url_tag);
-                // checkMarkComplete
-                // crossMarkOn
-                // crossMarkOff
-
                 var params = {
                     'type': 'GET',
                     // 'type': 'POST',
@@ -224,8 +216,7 @@
                         'datachunk': JSON.stringify({
                             'call': 'testService',
                             'params': {
-                                // 'test1': 'fart1',
-                                // 'test2': 'fart2'
+                                'test': 'test',
                             },
                             'class': 'router'
                         })
@@ -233,7 +224,6 @@
                 };
 
                 XELib.testWebServices(params).then(function (response) {
-                    console.log("test returned, response is: ", response);
                     if (response.success == false) {
                         Noti.callNoti({
                             message: response.msg,
@@ -260,12 +250,6 @@
             //         'value': params.coursename
             //     }
             // };
-
-            // Register events on the moodles form.
-            // onChange event for the URL selector
-            $('select#id_available_moodle_instances').on('change', function() {
-                that.getTokenReady();
-            });
         },
 
         /**
@@ -274,14 +258,14 @@
          */
         registerMappingEvents: function() {
             var that = this,
-                form_select = $("#id_srccourseshortname");
+                src_form_select = $("#id_srccourseshortname");
 
-            form_select.change(function() {
+            src_form_select.change(function() {
 
-                if (form_select.val()) {
+                if (src_form_select.val()) {
                     // change invokes any change so only make an ajax call if there is value
                     that.getGroupData({
-                        'courseid': form_select.val(),
+                        'courseid': src_form_select.val(),
                         'coursename': $( "#id_srccourseshortname option:selected" ).text()
                     },).then(function (response) {
                         // if the text is disabled then use select
@@ -331,16 +315,26 @@
 
             // Any changes to the group element, update the hidden.
             $("#id_srccoursegroupnameselect").change(function() {
-                var new_value = $(this).find("option:selected").attr('value');
-                var new_text = $(this).find("option:selected").text();
+                var new_value = $(this).find("option:selected").attr('value'),
+                    new_text = $(this).find("option:selected").text();
                 that.setHiddenValue('srccoursegroupname', new_text);
                 that.setHiddenValue('srccoursegroupid', new_value);
             });
 
             // Verify the Course and Group Names.
             $('#id_verifysource').on('click', function() {
-                var coursename = $("#id_srccourseshortname").val(),
+                var coursename = "",
+                    groupname = "";
+
+                // If we are using the autocomplete feature then the jquery
+                // selector is different.
+                if (sessionStorage.getItem("xes_autocomplete") == "1") {
+                    coursename = $("#id_srccourseshortname").find("option:selected").text();
+                    groupname = $("#id_srccoursegroupnameselect").find("option:selected").text();
+                } else {
+                    coursename = $("#id_srccourseshortname").val();
                     groupname = $("#id_srccoursegroupname").val();
+                }
 
                 if (coursename.length < 1) {
                     // User forgot to enter a course name.
@@ -409,6 +403,12 @@
                         });
                     }
                 });
+            });
+
+            // Register events on the moodles form.
+            // onChange event for the URL selector
+            $('select#id_available_moodle_instances').on('change', function() {
+                that.getTokenReady();
             });
         },
 
