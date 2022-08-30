@@ -328,11 +328,27 @@ class mappings extends \block_lsuxe\persistents\persistent {
      */
     protected function after_update($result) {
         global $CFG;
-        redirect($CFG->wwwroot . '/blocks/lsuxe/mappings.php',
-            get_string('updatedmapping', 'block_lsuxe'),
-            null,
-            \core\output\notification::NOTIFY_SUCCESS
-        );
+        // The action should still be stored so let's use that to redirect accordingly.
+        $action = optional_param('sentaction', "", PARAM_TEXT);
+        if ($action === "recovered") {
+            redirect($CFG->wwwroot . '/blocks/lsuxe/archives.php',
+                get_string('recoverarchive', 'block_lsuxe'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
+        } else if ($action === "delete") {
+            redirect($CFG->wwwroot . '/blocks/lsuxe/mappings.php',
+                get_string('deletemapping', 'block_lsuxe'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
+        } else {
+            redirect($CFG->wwwroot . '/blocks/lsuxe/mappings.php',
+                get_string('updatedmapping', 'block_lsuxe'),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
+        }
     }
 
     /*

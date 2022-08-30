@@ -72,12 +72,17 @@ abstract class persistent extends \core\persistent {
      * @return array
      */
     // public function check
-    public static function get_all_records($this_form = null) {
+    public static function get_all_records($this_form = null, $where = null, $order = "DESC") {
+    // public static function get_all_records($this_form = null) {
         global $DB;
 
+        if ($where == null) {
+            $where = "WHERE timedeleted IS NULL";
+        }
+
         $sql = 'SELECT * FROM {' . static::TABLE . '}
-            WHERE timedeleted IS NULL
-            ORDER BY timecreated DESC';
+            '. $where .'
+            ORDER BY timecreated '. $order;
 
         $recordset = $DB->get_records_sql($sql);
         $these_mappings = array();
