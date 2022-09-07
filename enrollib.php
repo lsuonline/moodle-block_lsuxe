@@ -15,14 +15,17 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe, Robert Russo
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Cross Enrollment Tool
+ *
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once('../../config.php');
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
+require_login();
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -34,6 +37,12 @@ class lsuxe {
      * @return boolean
      */
     public function run_lsuxe_full_enroll() {
+        $parms = array(
+            'intervals' => 'true',
+            'courseid' => '1',
+            'moodleid' => '0',
+            'function' => 'full'
+        );
 
         $starttime = microtime(true);
 
@@ -43,13 +52,13 @@ class lsuxe {
             mtrace("Normal Moodle Enrollment");
         }
 
-        lsuxe_helpers::xe_write_destcourse();
+        lsuxe_helpers::xe_write_destcourse($parms);
 
-        $groups = lsuxe_helpers::xe_get_groups();
+        $groups = lsuxe_helpers::xe_get_groups($parms);
 
         lsuxe_helpers::xe_write_destgroups($groups);
 
-        $users = lsuxe_helpers::xe_current_enrollments();
+        $users = lsuxe_helpers::xe_current_enrollments($parms);
 
         $count = 0;
         foreach ($users as $user) {
@@ -71,11 +80,14 @@ class lsuxe {
             if ($user->status == 'enrolled') {
                 $enrolluser = lsuxe_helpers::xe_enroll_user($user, $remoteuser['id']);
                 $enrolgroup = lsuxe_helpers::xe_add_user_to_group($user, $remoteuser['id']);
-            } else {
+            } else if ($user->status == 'unenrolled') {
                 $enrolluser = lsuxe_helpers::xe_unenroll_user($user, $remoteuser['id']);
             }
 
             $userelapsedtime = round(microtime(true) - $userstarttime, 3);
+
+            lsuxe_helpers::processed($user->xemmid);
+
             mtrace("User #$count ($user->username) took " . $userelapsedtime . " seconds to process.\n");
         }
 
@@ -120,7 +132,7 @@ class lsuxe {
             mtrace("Normal Moodle Enrollment");
         }
 
-        $users = lsuxe_helpers::xe_current_enrollments();
+        $users = lsuxe_helpers::xe_current_enrollments(true);
 
         $count = 0;
         foreach ($users as $user) {
@@ -184,7 +196,7 @@ class lsuxe {
             mtrace("Normal Moodle Enrollment");
         }
 
-        $users = lsuxe_helpers::xe_current_enrollments();
+        $users = lsuxe_helpers::xe_current_enrollments(true);
 
         $count = 0;
         foreach ($users as $user) {
@@ -200,7 +212,7 @@ class lsuxe {
                 if ($user->status == 'enrolled') {
                     $enrolluser = lsuxe_helpers::xe_enroll_user($user, $remoteuser['id']);
                     $enrolgroup = lsuxe_helpers::xe_add_user_to_group($user, $remoteuser['id']);
-                } else {
+                } else if ($user->status == 'unenrolled') {
                     $enrolluser = lsuxe_helpers::xe_unenroll_user($user, $remoteuser['id']);
                 }
             } else {
@@ -208,6 +220,9 @@ class lsuxe {
             }
 
             $userelapsedtime = round(microtime(true) - $userstarttime, 3);
+
+            lsuxe_helpers::processed($user->xemmid);
+
             mtrace("User #$count ($user->username) took " . $userelapsedtime . " seconds to process.\n");
         }
 

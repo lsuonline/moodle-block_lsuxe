@@ -15,10 +15,12 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Cross Enrollment Tool
+ *
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_lsuxe\output;

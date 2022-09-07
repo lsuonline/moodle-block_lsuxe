@@ -23,34 +23,27 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace block_lsuxe\output;
+defined('MOODLE_INTERNAL') || die();
 
-use renderable;
-use renderer_base;
-use templatable;
-use stdClass;
-use block_lsuxe\persistents\mappings;
+// We defined the web service functions to install.
+$functions = array(
+    'block_lsuxe_xeajax' => array(
+        'classname'   => 'block_lsuxe_external',
+        'methodname'  => 'xeajax',
+        'classpath'   => 'blocks/lsuxe/externallib.php',
+        'description' => 'Entry point for Cross Enrollment Rest Services',
+        'type'        => 'write',
+        'ajax'        => true
+    ),
+);
 
-require_once('../../config.php');
-require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
-require_login();
-
-class mappings_view implements renderable, templatable {
-    /**
-     * Export this data so it can be used as the context for a mustache template.
-     *
-     * @return stdClass
-     */
-    public function export_for_template(renderer_base $output): array {
-        global $CFG;
-        $pname = new mappings();
-        $helpers = new \lsuxe_helpers();
-
-        $data = $pname->get_all_records("mappings");
-        $updateddata = $pname->transform_for_view($data, $helpers);
-        $updateddata['xeurl'] = $CFG->wwwroot;
-        $updateddata['xeparms'] = "intervals=false&moodleid=0&function=course&courseid=";
-
-        return $updateddata;
-    }
-}
+// We define the services to install as pre-build services. A pre-build service is not editable by administrator.
+$services = array(
+    'LSUXE Service' => array(
+        'functions' => array (
+            'block_lsuxe_xeajax'
+        ),
+        'restrictedusers' => 0,
+        'enabled' => 1
+    )
+);

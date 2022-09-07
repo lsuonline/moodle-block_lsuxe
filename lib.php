@@ -15,16 +15,15 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe, Robert Russo
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Cross Enrollment Tool
+ *
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
-defined('MOODLE_INTERNAL') || die();
 class lsuxe_helpers {
-
 
     // Redirects.
     /**
@@ -37,8 +36,50 @@ class lsuxe_helpers {
      */
     public function redirect_to_url($url, $urlparams = [], $delay = 2) {
         $moodleurl = new \moodle_url($url, $urlparams);
-
         redirect($moodleurl, '', $delay);
+    }
+
+    /**
+     * Config Converter - config settings that have multiple lines with
+     * a key value settings will be broken down and converted into an
+     * associative array, for example:
+     * Monthly 720,
+     * Weekly 168
+     * .....etc
+     * Becomes (Monthly => 720, Weekly => 168)
+     * @param  string $configstring setting
+     * @param  string $arraytype by default multi, use mirror to miror key/value
+     *
+     * @return array
+     */
+    public function config_to_array($configstring, $arraytype = "multi") {
+
+        $configname = get_config('moodle', $configstring);
+
+        // Strip the line breaks.
+        $breakstripped = preg_replace("/\r|\n/", " ", $configname);
+        // Make sure there are not double spaces.
+        $breakstripped = str_replace("  ", " ", $breakstripped);
+        // Remove any spaces or line breaks from start or end.
+        $breakstripped = trim($breakstripped);
+
+        $exploded = explode(" ", $breakstripped);
+        $explodedcount = count($exploded);
+        $final = array();
+
+        if ($arraytype == "multi") {
+            // Now convert to array and transform to an assoc. array.
+            for ($i = 0; $i < $explodedcount; $i += 2) {
+                $final[$exploded[$i + 1]] = $exploded[$i];
+            }
+        } else if ($arraytype == "mirror") {
+            // It's possible there may be an extra line break from user input.
+            for ($i = 0; $i < $explodedcount; $i++) {
+                $tempval = $exploded[$i];
+                $final[$tempval] = $tempval;
+            }
+        }
+        return $final;
     }
 
     /**
@@ -46,13 +87,23 @@ class lsuxe_helpers {
      *
      * @return @array of $user objects.
      */
-    public static function xe_current_enrollments() {
+    public static function xe_current_enrollments($parms) {
         global $DB, $CFG;
 
-//TODO: Update interval tracking and processing.
+        $interval = isset($parms['intervals']) == true
+                    ? ' AND (UNIX_TIMESTAMP() - (xemm.updateinterval * 3600)) > xemm.timeprocessed'
+                    : '';
+
+        if ($parms['function'] = 'course' && $parms['courseid'] > 1) {
+            $wheres = "AND xemm.courseid = " . $parms['courseid'];
+        } else if ($parms['function'] = 'moodle' && $parms['moodleid'] > 0) {
+            $wheres = "AND xem.id = " . $parms['moodleid'];
+        } else {
+            $wheres = '';
+        }
 
         // LSU UES Specific enrollemnt / unenrollment data.
-        $lsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
+        $lsql = 'SELECT CONCAT(c.id, "_", g.id, "_", u.id, "_", stu.status) AS "xeid",
                 u.id AS "userid",
                 c.id AS "sourcecourseid",
                 c.shortname AS "sourcecourseshortname",
@@ -67,6 +118,8 @@ class lsuxe_helpers {
                 stu.status AS "status",
                 "student" AS "role",
                 u.auth AS "auth",
+                xemm.id AS "xemmid",
+                xemm.authmethod AS "xauth",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xem.teacherrole AS "teacherrole",
@@ -74,9 +127,7 @@ class lsuxe_helpers {
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
-                ue.timestart AS "timestart",
-                ue.timeend AS "timeend"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -86,13 +137,11 @@ class lsuxe_helpers {
                 INNER JOIN {user} u ON u.id = stu.userid
                 INNER JOIN {enrol} e ON e.courseid = c.id
                     AND e.enrol = "ues"
-                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                    AND ue.userid = u.id
                 INNER JOIN {groups} g ON g.courseid = c.id
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -101,10 +150,11 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() < xemm.endtime
                 AND xem.timedeleted IS NULL
                 AND xemm.timedeleted IS NULL
+                ' . $interval . $wheres . '
 
             UNION
 
-            SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
+            SELECT CONCAT(c.id, "_", g.id, "_", u.id, "_", stu.status) AS "xeid",
                 u.id AS "userid",
                 c.id AS "sourcecourseid",
                 c.shortname AS "sourcecourseshortname",
@@ -119,6 +169,8 @@ class lsuxe_helpers {
                 stu.status AS "status",
                 "editingteacher" AS "role",
                 u.auth AS "auth",
+                xemm.id AS "xemmid",
+                xemm.authmethod AS "xauth",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xem.teacherrole AS "teacherrole",
@@ -126,9 +178,7 @@ class lsuxe_helpers {
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
-                ue.timestart AS "timestart",
-                ue.timeend AS "timeend"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -138,13 +188,11 @@ class lsuxe_helpers {
                 INNER JOIN {user} u ON u.id = stu.userid
                 INNER JOIN {enrol} e ON e.courseid = c.id
                     AND e.enrol = "ues"
-                INNER JOIN {user_enrolments} ue ON ue.enrolid = e.id
-                    AND ue.userid = u.id
                 INNER JOIN {groups} g ON g.courseid = c.id
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -152,10 +200,11 @@ class lsuxe_helpers {
                 AND UNIX_TIMESTAMP() > xemm.starttime
                 AND UNIX_TIMESTAMP() < xemm.endtime
                 AND xem.timedeleted IS NULL
-                AND xemm.timedeleted IS NULL';
+                AND xemm.timedeleted IS NULL
+                ' . $interval . $wheres;
 
         // Generic Moodle enrollment / suspension data.
-        $gsql = 'SELECT CONCAT(u.id, "_", c.id, "_", g.id) AS "xeid",
+        $gsql = 'SELECT CONCAT(c.id, "_", g.id, "_", u.id, "_", IF(ue.status = 0, "enrolled", "unenrolled")) AS "xeid",
                 u.id AS "userid",
                 c.id AS "sourcecourseid",
                 c.shortname AS "sourcecourseshortname",
@@ -170,6 +219,8 @@ class lsuxe_helpers {
                 IF(ue.status = 0, "enrolled", "unenrolled") AS "status",
                 mr.shortname AS "role",
                 u.auth AS "auth",
+                xemm.id AS "xemmid",
+                xemm.authmethod AS "xauth",
                 xem.url AS "destmoodle",
                 xem.token AS "usertoken",
                 xem.teacherrole AS "teacherrole",
@@ -177,9 +228,7 @@ class lsuxe_helpers {
                 xemm.destcourseid AS "destcourseid",
                 xemm.destcourseshortname AS "destshortname",
                 xemm.destgroupid AS "destgroupid",
-                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname",
-                ue.timestart AS "timestart",
-                ue.timeend AS "timeend"
+                CONCAT(xemm.destgroupprefix, " ", xemm.groupname) AS "destgroupname"
             FROM {course} c
                 INNER JOIN {block_lsuxe_mappings} xemm ON xemm.courseid = c.id
                 INNER JOIN {block_lsuxe_moodles} xem ON xem.id = xemm.destmoodleid
@@ -193,14 +242,15 @@ class lsuxe_helpers {
                     AND ctx.instanceid = c.id
                     AND ctx.contextlevel = "50"
                 INNER JOIN {groups} g ON g.courseid = c.id
-                INNER JOIN {groups_members} gm ON gm.groupid = g.id
+                LEFT JOIN {groups_members} gm ON gm.groupid = g.id
                     AND u.id = gm.userid
             WHERE xemm.destcourseid IS NOT NULL
                 AND xemm.destgroupid IS NOT NULL
                 AND UNIX_TIMESTAMP() > xemm.starttime
                 AND UNIX_TIMESTAMP() < xemm.endtime
                 AND xem.timedeleted IS NULL
-                AND xemm.timedeleted IS NULL';
+                AND xemm.timedeleted IS NULL
+                ' . $interval . $wheres;
 
         // Check to see if we're forcing Moodle enrollment.
         $ues = isset($CFG->xeforceenroll) == 0 ? true : false;
@@ -244,12 +294,43 @@ class lsuxe_helpers {
     }
 
     /**
+     *
+     * @return @bool
+     */
+    public static function processed($xemmid) {
+        global $DB;
+
+        // Set the xemm table name.
+        $xemtable = 'block_lsuxe_mappings';
+
+        // Set the time.
+        $now = time();
+
+        // Build the minimal data object for update.
+        $dataobject = array('id' => $xemmid, 'timeprocessed' => $now);
+
+        // Update the timestamp.
+        $return = $DB->update_record($xemtable, $dataobject);
+
+        // Return the appropriate value.
+        return $return;
+    }
+
+    /**
      * Function to grab the destination courseid.
      *
      * @return @array of objects
      */
-    public static function xe_get_destcourse() {
+    public static function xe_get_destcourse($parms=null) {
         global $DB;
+
+        if ($parms['function'] = 'course' && $parms['courseid'] > 1) {
+            $wheres = "AND xemm.courseid = " . $parms['courseid'];
+        } else if ($parms['function'] = 'moodle' && $parms['moodleid'] > 0) {
+            $wheres = "AND xem.id = " . $parms['moodleid'];
+        } else {
+            $wheres = '';
+        }
 
         // Build the SQL for grabbing the data.
         $sql = 'SELECT xemm.id AS xemmid,
@@ -260,7 +341,8 @@ class lsuxe_helpers {
                    INNER JOIN {block_lsuxe_mappings} xemm ON xemm.destmoodleid = xem.id
                WHERE xemm.destcourseid IS NULL
                    AND UNIX_TIMESTAMP() > xemm.starttime
-                   AND UNIX_TIMESTAMP() < xemm.endtime';
+                   AND UNIX_TIMESTAMP() < xemm.endtime
+                   ' . $wheres;
 
         // Get the data from the SQL.
         $courses = $DB->get_records_sql($sql);
@@ -273,11 +355,11 @@ class lsuxe_helpers {
      *
      * @return @array of objects
      */
-    public static function xe_write_destcourse() {
+    public static function xe_write_destcourse($parms=null) {
         global $DB;
 
         // Grab the list.
-        $courses = self::xe_get_destcourse();
+        $courses = self::xe_get_destcourse($parms);
 
         // Loop through the data we got above.
         foreach ($courses as $course) {
@@ -294,7 +376,7 @@ class lsuxe_helpers {
             $defaults = array(
                 CURLOPT_URL => 'https://' . $course->destmoodle . '/webservice/rest/server.php',
                 CURLOPT_HEADER => 0,
-                CURLOPT_RETURNTRANSFER => TRUE,
+                CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 4,
                 CURLOPT_POST => false,
                 CURLOPT_POSTFIELDS => $pageparams,
@@ -334,10 +416,13 @@ class lsuxe_helpers {
                 ];
 
                 // Write the data.
-                if ($DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false)) {
-                    mtrace("We have written the destination courseid ($destcourseid) for <strong>$course->destshortname</strong> to the local DB.");
+                if ($DB->update_record('block_lsuxe_mappings', $dataobject, $bulk = false)) {
+                    mtrace("We have written the destination courseid ($destcourseid) "
+                        . "for <strong>$course->destshortname</strong> to the local DB.");
                 } else {
-                    $errors[] = array("DB Write Error" => "The destination course id: $destcourseid could not be written to the local DB.");
+                    $errors[] = array(
+                        "DB Write Error" => "The destination course id: $destcourseid could not be written to the local DB."
+                    );
                 }
             }
         }
@@ -350,8 +435,16 @@ class lsuxe_helpers {
      *
      * @return true
      */
-    public static function xe_get_groups() {
+    public static function xe_get_groups($parms) {
         global $DB;
+
+        if ($parms['function'] = 'course' && $parms['courseid'] > 1) {
+            $wheres = "AND xemm.courseid = " . $parms['courseid'];
+        } else if ($parms['function'] = 'moodle' && $parms['moodleid'] > 0) {
+            $wheres = "AND xem.id = " . $parms['moodleid'];
+        } else {
+            $wheres = '';
+        }
 
         // Build the SQL to get the appropriate data for the webservice.
         $sql = 'SELECT xemm.id AS xemmid,
@@ -365,7 +458,8 @@ class lsuxe_helpers {
                WHERE xemm.destgroupid IS NULL
                    AND xemm.destcourseid IS NOT NULL
                    AND UNIX_TIMESTAMP() > xemm.starttime
-                   AND UNIX_TIMESTAMP() < xemm.endtime';
+                   AND UNIX_TIMESTAMP() < xemm.endtime
+                   ' . $wheres;
 
         // Actually get the data.
         $groups = $DB->get_records_sql($sql);
@@ -391,7 +485,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $group->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -422,7 +516,8 @@ class lsuxe_helpers {
             // If we have a match, store the destination group id and exit the loop.
             if ($destgroupnamexp == $destgroupname) {
                 $destgroupid = $returnedgroup['id'];
-                mtrace("We found a destination <strong>$destgroupname</strong> group that matches the local group <strong>$destgroupnamexp</strong>.");
+                mtrace("We found a destination <strong>$destgroupname</strong> "
+                    . "group that matches the local group <strong>$destgroupnamexp</strong>.");
                 break;
             } else {
                 $destgroupid = null;
@@ -450,8 +545,9 @@ class lsuxe_helpers {
             ];
             // Write it locally.
             $destgroupnamexp = $group->destgroupprefix . " " . $group->groupname;
-            $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk=false);
-            mtrace("We have written a destination groupid ($destgroupid) record for <strong>$destgroupnamexp</strong> to the local DB.");
+            $writeout = $DB->update_record('block_lsuxe_mappings', $dataobject, $bulk = false);
+            mtrace("We have written a destination groupid ($destgroupid) record "
+                . "for <strong>$destgroupnamexp</strong> to the local DB.");
         } else {
             // Create the remote group.
             $destgroupid = self::xe_create_remote_group($group);
@@ -470,9 +566,9 @@ class lsuxe_helpers {
         foreach ($groups as $group) {
             $destgroup = self::xe_write_destgroup($group);
         }
-   }
+    }
 
-     public static function xe_create_remote_group($group) {
+    public static function xe_create_remote_group($group) {
         global $DB;
 
         // Set the group creation page params.
@@ -489,7 +585,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $group->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -513,7 +609,8 @@ class lsuxe_helpers {
 
         // Another sanity check to make sure it's set before we write it.
         if (isset($destgroupid)) {
-            mtrace("We have created a remote group <strong>$group->destgroupprefix $group->groupname</strong> with id ($destgroupid).");
+            mtrace("We have created a remote group <strong>$group->destgroupprefix "
+                . "$group->groupname</strong> with id ($destgroupid).");
             // Set the data object for writing to our DB.
             self::xe_write_destgroup($group);
         }
@@ -542,7 +639,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -601,7 +698,7 @@ class lsuxe_helpers {
         $luser->firstname     = $user->firstname;
         $luser->lastname      = $user->lastname;
         $luser->alternatename = $user->alternatename;
-        $luser->auth          = $user->auth;
+        $luser->auth          = strtolower($user->xauth);
 
         if ($luser == $ruser) {
             mtrace("The local ($luser->username) and remote user ($ruser->username) objects match entirely. Skipping.");
@@ -637,7 +734,7 @@ class lsuxe_helpers {
             'users[0][id]' => $returneduser['id'],
             'users[0][username]' => $user->username,
             'users[0][email]' => $user->email,
-            'users[0][auth]' => $user->auth,
+            'users[0][auth]' => strtolower($user->xauth),
             'users[0][firstname]' => $user->firstname,
             'users[0][lastname]' => $user->lastname,
             'users[0][alternatename]' => $user->alternatename,
@@ -649,7 +746,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -699,7 +796,7 @@ class lsuxe_helpers {
             'moodlewsrestformat' => 'json',
             'users[0][username]' => $user->username,
             'users[0][email]' => $user->email,
-            'users[0][auth]' => $user->auth,
+            'users[0][auth]' => strtolower($user->xauth),
             'users[0][firstname]' => $user->firstname,
             'users[0][lastname]' => $user->lastname,
             'users[0][alternatename]' => $user->alternatename,
@@ -711,7 +808,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -753,8 +850,14 @@ class lsuxe_helpers {
      * @return @bool
      */
     public static function xe_enroll_user($user, $remoteuserid) {
+        global $CFG;
+
         $role = isset($CFG->xestudentrolename) ? $CFG->xestudentrolename : 'student';
-        $roleid = $user->role == $role ? $user->studentrole : $user->teacherrole;
+
+        $studentrole = $user->studentrole < 99 ? $user->studentrole : $CFG->block_lsuxe_xestudentroleid;
+        $teacherrole = $user->teacherrole < 99 ? $user->teacherrole : $CFG->block_lsuxe_xeteacherroleid;
+
+        $roleid = $user->role == $role ? $studentrole : $teacherrole;
 
         // Set the enrollment page params.
         $pageparams = [
@@ -770,7 +873,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -803,7 +906,7 @@ class lsuxe_helpers {
             // Success.
             mtrace("Enrolled " . $user->username . " with remote userid"
                     . " $remoteuserid as $user->role in"
-                    . " the remote courseid " . $user->destcourseid 
+                    . " the remote courseid " . $user->destcourseid
                     . " on https://" . $user->destmoodle . ".");
         }
 
@@ -836,7 +939,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,
@@ -895,7 +998,7 @@ class lsuxe_helpers {
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4,
             CURLOPT_POST => false,
             CURLOPT_POSTFIELDS => $pageparams,

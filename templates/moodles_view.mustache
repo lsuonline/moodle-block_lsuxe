@@ -15,16 +15,18 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Cross Enrollment Tool
+ *
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 -->
 
-<div class="block_lsuxe_mappings_container">
+<div class="block_lsuxe_container">
 
-    <table class="table table-hover lsuxe_mappings_table">
+    <table class="table table-hover table-striped lsuxe_moodles_table">
         <thead>
             <tr>
                 {{#moodleURL}}
@@ -67,6 +69,7 @@
                 {{/tokenExpiration}}
 
                 <th>{{# str }} updateinterval, block_lsuxe {{/ str }}</th>
+                <th>{{# str }} mappingslinked, block_lsuxe {{/ str }}</th>
                 <th>{{# str }} updatenow, block_lsuxe {{/ str }}</th>
                 <th>{{# str }} edit, block_lsuxe {{/ str }}</th>
                 <th>{{# str }} delete, block_lsuxe {{/ str }}</th>
@@ -74,26 +77,33 @@
             </tr>
         </thead>
         <tbody>
-            {{# tableRows }}
-                <tr>
-                    <td>{{ moodleurl }}</td>
-                    <td>{{ srcshortname }}</td>
-                    <td>{{ srcgroup }}</td>
-                    <td>{{ destshortname }}</td>
-                    <td>{{ updateinterval }}</td>
-                    <td>{{ updatenow }}</td>
-                    <td>{{ edit }}</td>
-                    <td>{{ delete }}</td>
+            {{# moodles }}
+            <form method="POST" id="map_form_{{id}}">
+                <tr data-rowid='{{id}}' data-mlinks='{{mappingslinked}}'>
+                    <input type="hidden" value="{{id}}" name="sentdata"/>
+                    <td><a href="{{url}}" target="_blank">{{url}}</a></td>
+                    <td><a href="{{url}}/admin/settings.php?section=webservicetokens" target="_blank">{{token}}</a></td>
+                    <td>{{tokenexpire}}</td>
+                    <td>{{{updateinterval}}}</td>
+                    <td>{{mappingslinked}}</td>
+                    <td><a href="{{xeurl}}/blocks/lsuxe/reprocess.php?{{xeparms}}{{id}}" class="btn btn-success mview_update"><i class="fa fa-refresh"></i></a></td>
+                    <td><button type="submit" class="btn btn-warning mview_edit"><i class="fa fa-pencil"></i></button></td>
+                    <td><button type="submit" class="btn btn-danger mview_delete"><i class="fa fa-trash"></i></button></td>
                 </tr>
-            {{/ tableRows }}
+            </form>
+            {{/ moodles }}
 
-            {{^ tableRows }}
+            {{^ moodles }}
                 <tr>
                     <td colspan="7" align="center">{{# str }} nomoodles, block_lsuxe {{/ str }}</td>
                 </tr>
-            {{/ tableRows }}
+            {{/ moodles }}
 
         </tbody>
     </table>
-
+    <span class="pull-right">
+        <a href="{{xeurl}}/blocks/lsuxe/moodles.php?vform=1" class="btn btn-info">Create New</a>
+    </span>
+    {{! This will load the JS for the views that have basic create, update, delete buttons }}
+    {{> block_lsuxe/buttons }}
 </div>

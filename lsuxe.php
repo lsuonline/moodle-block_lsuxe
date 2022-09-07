@@ -15,18 +15,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Cross Enrollment Tool
+ *
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require_once('../../config.php');
 require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
+
 $helpers = new lsuxe_helpers();
 
 // Authentication.
 require_login();
+
 if (!is_siteadmin()) {
     $helpers->redirect_to_url('/my');
 }
@@ -42,54 +46,61 @@ $PAGE->set_url($url);
 $PAGE->set_title($title);
 $PAGE->set_heading($title);
 
-// Navbar Bread Crumbs
+// Navbar Bread Crumbs.
 $PAGE->navbar->add(get_string('xedashboard', 'block_lsuxe'), new moodle_url('lsuxe.php'));
-
+$PAGE->requires->css(new moodle_url('/blocks/lsuxe/style.css'));
 $output = $PAGE->get_renderer('block_lsuxe');
-echo $output->header();
 
+
+echo $output->header();
 echo $output->heading($sectiontitle);
 
 // Links.
-$dashboard_links = array(
+$dashboardlinks = array(
     array(
         // The Mappinges View.
-        'url' => '/blocks/lsuxe/mappings.php?view=1',
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/mappings.php',
         'icon' => 'list',
         'lang' => get_string('mappings_view', 'block_lsuxe')
     ),
     array(
         // The Mappinges Form.
-        'url' => '/blocks/lsuxe/mappings.php',
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/mappings.php?vform=1',
         'icon' => 'plus-square-o',
         'lang' => get_string('mappings_create', 'block_lsuxe')
     ),
     array(
         // The Moodles View.
-        'url' => '/blocks/lsuxe/moodles.php?view=1',
-        'icon' => 'list',
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/moodles.php',
+        'icon' => 'server',
         'lang' => get_string('moodles_view', 'block_lsuxe')
     ),
     array(
         // The Mappinges Form.
-        'url' => '/blocks/lsuxe/moodles.php',
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/moodles.php?vform=1',
         'icon' => 'plus-square-o',
         'lang' => get_string('moodles_create', 'block_lsuxe')
     ),
     array(
         // Tokens.
-        'url' => '/admin/settings.php?section=webservicetokens',
+        'url' => $CFG->wwwroot . '/admin/settings.php?section=webservicetokens',
         'icon' => 'key',
         'lang' => get_string('manage_tokens', 'block_lsuxe')
     ),
     array(
+        // Archives.
+        'url' => $CFG->wwwroot . '/blocks/lsuxe/archives.php',
+        'icon' => 'archive',
+        'lang' => get_string('archives', 'block_lsuxe')
+    ),
+    array(
         // The Settings Page.
-        'url' => '/admin/settings.php?section=blocksettinglsuxe',
+        'url' => $CFG->wwwroot . '/admin/settings.php?section=blocksettinglsuxe',
         'icon' => 'cog',
         'lang' => get_string('settings', 'block_lsuxe')
     ),
 );
 
-$renderable = new \block_lsuxe\output\dashboard($dashboard_links);
+$renderable = new \block_lsuxe\output\dashboard($dashboardlinks);
 echo $output->render($renderable);
 echo $output->footer();

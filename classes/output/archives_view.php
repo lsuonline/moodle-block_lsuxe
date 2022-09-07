@@ -15,10 +15,12 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @package    block_lsuxe
- * @copyright  2008 onwards Louisiana State University
- * @copyright  2008 onwards David Lowe
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Cross Enrollment Tool
+ *
+ * @package   block_lsuxe
+ * @copyright 2008 onwards Louisiana State University
+ * @copyright 2008 onwards David Lowe, Robert Russo
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 namespace block_lsuxe\output;
@@ -27,24 +29,28 @@ use renderable;
 use renderer_base;
 use templatable;
 use stdClass;
+use block_lsuxe\persistents\mappings;
 
-class moodles_create implements renderable, templatable {
-    /** @var string $sometext Some text to show how to pass data to a template. */
-    // private $sometext = null;
+require_once('../../config.php');
+require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
+require_login();
 
-    // public function __construct($sometext): void {
-    public function __construct($sometext) {
-        // $this->sometext = $sometext;
-    }
-
+class archives_view implements renderable, templatable {
     /**
      * Export this data so it can be used as the context for a mustache template.
      *
      * @return stdClass
      */
-    public function export_for_template(renderer_base $output): stdClass {
-        // $data = new stdClass();
-        // $data->sometext = $this->sometext;
-        // return $data;
+    public function export_for_template(renderer_base $output): array {
+        global $CFG;
+        $pname = new mappings();
+        $helpers = new \lsuxe_helpers();
+
+        $where = "WHERE timedeleted IS NOT NULL";
+        $data = $pname->get_all_records("mappings", $where);
+        $updateddata = $pname->transform_for_view($data, $helpers);
+        $updateddata['xeurl'] = $CFG->wwwroot;
+
+        return $updateddata;
     }
 }

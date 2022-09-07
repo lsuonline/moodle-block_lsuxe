@@ -1,4 +1,3 @@
-<?php
 // This file is part of Moodle - http://moodle.org/
 //
 // Moodle is free software: you can redistribute it and/or modify
@@ -23,34 +22,25 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-namespace block_lsuxe\output;
+ define(['jquery', 'block_lsuxe/xe_lib', 'block_lsuxe/form_events'],
+    function($, XELib, XEEvents) {
+    'use strict';
+    return {
 
-use renderable;
-use renderer_base;
-use templatable;
-use stdClass;
-use block_lsuxe\persistents\mappings;
+        /**
+         * This is the starting function for the Cross Enrollment Tool
+         * @param {object} extras is data coming from PHP
+         */
+        init: function() {
+            // Clear the session storage so it won't last outside of the form page.
+            sessionStorage.removeItem("currentToken");
+            sessionStorage.removeItem("currentUrl");
 
-require_once('../../config.php');
-require_once($CFG->dirroot . '/blocks/lsuxe/lib.php');
-require_login();
+            // Process any data being sent here.
+            XELib.preLoadConfig();
 
-class mappings_view implements renderable, templatable {
-    /**
-     * Export this data so it can be used as the context for a mustache template.
-     *
-     * @return stdClass
-     */
-    public function export_for_template(renderer_base $output): array {
-        global $CFG;
-        $pname = new mappings();
-        $helpers = new \lsuxe_helpers();
-
-        $data = $pname->get_all_records("mappings");
-        $updateddata = $pname->transform_for_view($data, $helpers);
-        $updateddata['xeurl'] = $CFG->wwwroot;
-        $updateddata['xeparms'] = "intervals=false&moodleid=0&function=course&courseid=";
-
-        return $updateddata;
-    }
-}
+            // Register any click events and other start up processes.
+            XEEvents.init();
+        }
+    };
+});
