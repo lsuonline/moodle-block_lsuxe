@@ -141,7 +141,7 @@ class lsuxe_helpers {
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -192,7 +192,7 @@ class lsuxe_helpers {
                     AND g.id = xemm.groupid
                     AND g.name = xemm.groupname
                     AND g.name = CONCAT(cou.department, " ", cou.cou_number, " ", sec.sec_number)
-                LEFT JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
+                INNER JOIN {groups_members} gm ON gm.groupid = g.id AND u.id = gm.userid
             WHERE sec.idnumber IS NOT NULL
                 AND sec.idnumber <> ""
                 AND xemm.destcourseid IS NOT NULL
@@ -242,7 +242,7 @@ class lsuxe_helpers {
                     AND ctx.instanceid = c.id
                     AND ctx.contextlevel = "50"
                 INNER JOIN {groups} g ON g.courseid = c.id
-                LEFT JOIN {groups_members} gm ON gm.groupid = g.id
+                INNER JOIN {groups_members} gm ON gm.groupid = g.id
                     AND u.id = gm.userid
             WHERE xemm.destcourseid IS NOT NULL
                 AND xemm.destgroupid IS NOT NULL
@@ -678,6 +678,9 @@ class lsuxe_helpers {
             return false;
         }
 
+        // Make sure we have an idnumber.
+        $returneduser['idnumber'] = isset($returneduser['idnumber']) ? $returneduser['idnumber'] : '';
+
         // Set up the remote user object.
         $ruser                = new stdClass();
         $ruser->username      = $returneduser['username'];
@@ -789,21 +792,40 @@ class lsuxe_helpers {
     public static function xe_remote_user_create($user) {
         mtrace("User <strong>$user->username</strong> not found on remote system, create them.");
 
-        // Set the user creation page params.
-        $pageparams = [
-            'wstoken' => $user->usertoken,
-            'wsfunction' => 'core_user_create_users',
-            'moodlewsrestformat' => 'json',
-            'users[0][username]' => $user->username,
-            'users[0][email]' => $user->email,
-            'users[0][auth]' => strtolower($user->xauth),
-            'users[0][firstname]' => $user->firstname,
-            'users[0][lastname]' => $user->lastname,
-            'users[0][alternatename]' => $user->alternatename,
-            'users[0][email]' => $user->email,
-            'users[0][idnumber]' => $user->idnumber,
-        ];
+        // Make sure idnumber is set.
+        $user->idnumber = isset($user->idnumber) ? $user->idnumber : '';
 
+        // Set the user creation page params.
+        if (strtolower($user->xauth) <> 'manual') {
+            $pageparams = [
+                'wstoken' => $user->usertoken,
+                'wsfunction' => 'core_user_create_users',
+                'moodlewsrestformat' => 'json',
+                'users[0][username]' => $user->username,
+                'users[0][email]' => $user->email,
+                'users[0][auth]' => strtolower($user->xauth),
+                'users[0][firstname]' => $user->firstname,
+                'users[0][lastname]' => $user->lastname,
+                'users[0][alternatename]' => $user->alternatename,
+                'users[0][email]' => $user->email,
+                'users[0][idnumber]' => $user->idnumber,
+            ];
+        } else {
+            $pageparams = [
+                'wstoken' => $user->usertoken,
+                'wsfunction' => 'core_user_create_users',
+                'moodlewsrestformat' => 'json',
+                'users[0][username]' => $user->username,
+                'users[0][email]' => $user->email,
+                'users[0][auth]' => 'manual',
+                'users[0][createpassword]' => true,
+                'users[0][firstname]' => $user->firstname,
+                'users[0][lastname]' => $user->lastname,
+                'users[0][alternatename]' => $user->alternatename,
+                'users[0][email]' => $user->email,
+                'users[0][idnumber]' => $user->idnumber,
+            ];
+        }
         // Set the user update defaults.
         $defaults = array(
             CURLOPT_URL => 'https://' . $user->destmoodle . '/webservice/rest/server.php',
